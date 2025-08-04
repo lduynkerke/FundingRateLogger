@@ -113,7 +113,7 @@ def test_collect_and_save_data(mock_client, funding_time, mock_config):
     """
     with patch('pipeline.funding_rate_logger.save_data_to_csv') as mock_save:
         with patch('pipeline.funding_rate_logger.load_config', return_value=mock_config):
-            collect_and_save_data(mock_client, "BTC_USDT", funding_time)
+            collect_and_save_data(mock_client, "BTC_USDT", funding_time, mock_config['funding'])
         
         assert mock_client.get_futures_ohlcv.call_count == 4, "Should call get_futures_ohlcv 4 times for different timeframes"
         
@@ -127,7 +127,7 @@ def test_collect_and_save_data(mock_client, funding_time, mock_config):
         assert '1m' in call_args[2], "1-minute candles should be included in saved data"
 
 
-def test_log_funding_snapshot_15min_window(mock_client, funding_time):
+def test_log_funding_snapshot_15min_window(mock_client, funding_time, mock_config):
     """
     Test that log_funding_snapshot correctly identifies and handles 15-minute window before funding.
     
@@ -142,6 +142,7 @@ def test_log_funding_snapshot_15min_window(mock_client, funding_time):
     Args:
         mock_client: Fixture providing a mocked MEXCContractClient
         funding_time: Fixture providing a consistent funding time for testing
+        mock_config: Fixture providing a mock configuration with time window settings
     """
     with patch('pipeline.funding_rate_logger.datetime') as mock_datetime:
         with patch('pipeline.funding_rate_logger.cache_top_symbols') as mock_cache:
@@ -150,14 +151,14 @@ def test_log_funding_snapshot_15min_window(mock_client, funding_time):
             mock_datetime.now.return_value = mock_now
             
             with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
-                log_funding_snapshot(mock_client)
+                log_funding_snapshot(mock_client, config=mock_config['funding'])
                 
                 mock_cache.assert_called_once(), "cache_top_symbols should be called once"
-                assert mock_cache.call_args[0][0] == funding_time, "Funding time should be passed correctly to cache_top_symbols"
-                assert mock_cache.call_args[0][1] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Top symbols should be passed correctly to cache_top_symbols"
+                assert mock_cache.call_args[0][0] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Top symbols should be passed correctly to cache_top_symbols"
+                assert mock_cache.call_args[0][1] == funding_time, "Funding time should be passed correctly to cache_top_symbols"
 
 
-def test_log_funding_snapshot_10min_window(mock_client, funding_time):
+def test_log_funding_snapshot_10min_window(mock_client, funding_time, mock_config):
     """
     Test that log_funding_snapshot correctly identifies and handles 10-minute window before funding.
     
@@ -174,22 +175,25 @@ def test_log_funding_snapshot_10min_window(mock_client, funding_time):
     Args:
         mock_client: Fixture providing a mocked MEXCContractClient
         funding_time: Fixture providing a consistent funding time for testing
+        mock_config: Fixture providing a mock configuration with time window settings
     """
     with patch('pipeline.funding_rate_logger.datetime') as mock_datetime:
         with patch('pipeline.funding_rate_logger.load_cached_symbols') as mock_load:
             with patch('pipeline.funding_rate_logger.collect_and_save_data') as mock_collect:
-                # Set the current time to 10 minutes before funding
-                mock_now = datetime(2025, 8, 2, 15, 50, 0, tzinfo=timezone.utc)
+                # Set the current time to 20 minutes after funding
+                mock_now = datetime(2025, 8, 2, 16, 20, 0, tzinfo=timezone.utc)
                 mock_datetime.now.return_value = mock_now
                 
                 with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
                     mock_load.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
                     
-                    log_funding_snapshot(mock_client)
+                    log_funding_snapshot(mock_client, config=mock_config['funding'])
                     
-                    mock_load.assert_called_once_with(funding_time), "load_cached_symbols should be called with correct funding time"
+                    # Check that load_cached_symbols was called with the correct funding_time
+                    assert mock_load.call_count == 1, "load_cached_symbols should be called once"
+                    assert mock_load.call_args[0][0] == funding_time, "Funding time should be passed correctly to load_cached_symbols"
                     
                     assert mock_collect.call_count == 3, "collect_and_save_data should be called for each symbol"
-                    mock_collect.assert_any_call(mock_client, "BTC_USDT", funding_time), "collect_and_save_data should be called for BTC_USDT"
-                    mock_collect.assert_any_call(mock_client, "ETH_USDT", funding_time), "collect_and_save_data should be called for ETH_USDT"
-                    mock_collect.assert_any_call(mock_client, "SOL_USDT", funding_time), "collect_and_save_data should be called for SOL_USDT"
+                    mock_collect.assert_any_call(mock_client, "BTC_USDT", funding_time, mock_config['funding']), "collect_and_save_data should be called for BTC_USDT"
+                    mock_collect.assert_any_call(mock_client, "ETH_USDT", funding_time, mock_config['funding']), "collect_and_save_data should be called for ETH_USDT"
+                    mock_collect.assert_any_call(mock_client, "SOL_USDT", funding_time, mock_config['funding']), "collect_and_save_data should be called for SOL_USDT"

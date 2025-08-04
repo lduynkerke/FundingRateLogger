@@ -24,15 +24,15 @@ def logger():
     """
     Fixture that provides a configured logger instance for testing.
     
-    This fixture initializes the application logger with the standard configuration
-    from setup_logger(), making it available for tests to verify its properties
+    This fixture initializes the application logger with the configuration
+    from the config.yaml file, making it available for tests to verify its properties
     and behavior. The logger is configured with both file and console handlers.
     
     Returns:
         logging.Logger: A fully configured logger instance.
     """
-    # setup_logger can now handle None config properly
-    return setup_logger()
+    config = load_config()
+    return setup_logger(config['logging'])
 
 
 @pytest.fixture

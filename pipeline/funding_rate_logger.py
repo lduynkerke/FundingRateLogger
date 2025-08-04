@@ -83,9 +83,9 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
 
             if -15 <= delta < 0:
                 logger.info(f"15-minute window before funding at {funding_time.isoformat()}, caching top symbols")
-                top3_symbols = fetch_top_symbols(client, top_n=config.get('top_n', 5))
-                cache_top_symbols(top3_symbols, funding_time, cache_dir=CACHE_DIR)
-                logger.info(f"Top 5 symbols cached at {now.isoformat()} for {funding_time.isoformat()}: {', '.join(top3_symbols)}")
+                top_symbols = fetch_top_symbols(client, top_n=config.get('top_n', 5))
+                cache_top_symbols(top_symbols, funding_time, cache_dir=CACHE_DIR)
+                logger.info(f"Top 5 symbols cached at {now.isoformat()} for {funding_time.isoformat()}: {', '.join(top_symbols)}")
 
             if 15 <= delta <= 30:
                 logger.info(f"15-minute window after funding at {funding_time.isoformat()}, collecting data")
