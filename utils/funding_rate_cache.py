@@ -11,7 +11,8 @@ Functions:
     - cleanup_old_caches
 """
 from pathlib import Path
-from datetime import datetime
+from typing import List
+from datetime import datetime, timezone, timedelta
 
 def cache_top_symbols(symbols: list[str], funding_time: datetime, cache_dir: Path) -> Path:
     """

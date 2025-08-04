@@ -26,7 +26,7 @@ class MEXCContractClient(BaseMEXCClient):
     def __init__(self, config: dict):
         super().__init__(config=config, market="contract")
 
-    async def _fetch_funding_rate(self, symbol: str, semaphore: asyncio.Semaphore) -> dict:
+    async def _fetch_funding_rate(self, symbol: str, semaphore: asyncio.Semaphore) -> Dict[str, any]:
         """
         Asynchronously fetches funding rate data for a single symbol.
 
@@ -52,7 +52,7 @@ class MEXCContractClient(BaseMEXCClient):
                     self.logger.error(f"Failed to fetch funding rate for {symbol}: {e}")
                     return {}
 
-    async def _gather_funding_rates(self, symbols: List[str], max_concurrent_requests: int = 10) -> List[dict]:
+    async def _gather_funding_rates(self, symbols: List[str], max_concurrent_requests: int = 10) -> List[Dict[str, any]]:
         """
         Gathers funding rates for all provided symbols asynchronously.
 
@@ -68,7 +68,7 @@ class MEXCContractClient(BaseMEXCClient):
         results = await asyncio.gather(*tasks)
         return [res for res in results if res]
 
-    def get_futures_ohlcv(self, symbol: str, interval: str = "Min1", start: int = None, end: int = None) -> List[dict]:
+    def get_futures_ohlcv(self, symbol: str, interval: str = "Min1", start: int = None, end: int = None) -> List[list]:
         """
         Fetches OHLCV (kline) data for a given futures symbol using start/end timestamps.
 
@@ -125,7 +125,7 @@ class MEXCContractClient(BaseMEXCClient):
             self.logger.error(f"Error fetching perpetual symbols: {e}")
             return []
 
-    def get_all_funding_rates_async(self, symbols: List[str], max_concurrent_requests: int = 10) -> List[dict]:
+    def get_all_funding_rates_async(self, symbols: List[str], max_concurrent_requests: int = 10) -> List[Dict[str, any]]:
         """
         Public method to fetch funding rates for multiple symbols asynchronously.
 
@@ -145,7 +145,7 @@ class MEXCContractClient(BaseMEXCClient):
             self.logger.error(f"Error fetching funding rates asynchronously: {e}")
             return []
 
-    def get_top_funding_rates(self, symbols: List[str], top_n: int = 3) -> List[Dict]:
+    def get_top_funding_rates(self, symbols: List[str], top_n: int = 3) -> List[Dict[str, any]]:
         """
         Returns the top N perpetual pairs with the highest absolute funding rates.
 

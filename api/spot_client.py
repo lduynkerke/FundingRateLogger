@@ -21,7 +21,7 @@ class MEXCSpotClient(BaseMEXCClient):
     def __init__(self, config: dict):
         super().__init__(config=config, market="spot")
 
-    def get_spot_ohlcv(self, symbol: str, interval: str = "1m", limit: int = 1) -> List[List]:
+    def get_spot_ohlcv(self, symbol: str, interval: str = "1m", limit: int = 1) -> List[list]:
         """
         Fetches OHLCV (candlestick) data for a given spot symbol.
 

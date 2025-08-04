@@ -16,6 +16,7 @@ when to collect data based on proximity to funding times.
 import csv
 import os
 from pathlib import Path
+from typing import List, Dict
 from datetime import datetime, timedelta, timezone
 from api.contract_client import MEXCContractClient
 from utils.funding_rate_cache import cache_top_symbols, load_cached_symbols, cleanup_old_caches
@@ -47,7 +48,7 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3) -> list[str]:
         logger.error(f"Error fetching top symbols: {e}")
         return []
 
-def log_funding_snapshot(client: MEXCContractClient, config) -> None:
+def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
     """
     Logs funding rate snapshot and OHLCV data if within 15 or 10 minutes before a funding event.
 
@@ -97,7 +98,7 @@ def log_funding_snapshot(client: MEXCContractClient, config) -> None:
         logger.error(f"Error in log_funding_snapshot: {e}")
         raise
 
-def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time: datetime, config) -> None:
+def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time: datetime, config: Dict) -> None:
     """
     Collects OHLCV candles and saves them to CSV for a given symbol and funding time.
     
@@ -213,7 +214,7 @@ def is_within_window(target_time: datetime, window_minutes: int = 10) -> bool:
     delta = abs((now - target_time).total_seconds()) / 60
     return delta <= window_minutes
 
-def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: dict) -> None:
+def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str, List[list]]) -> None:
     """
     Saves the collected candle data to a CSV file.
 

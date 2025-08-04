@@ -21,11 +21,11 @@ from pipeline.funding_rate_logger import log_funding_snapshot, get_next_funding_
 from utils.config_loader import load_config
 from utils.logger import setup_logger, get_logger
 
-def main():
+def main() -> None:
     """
     Initializes the MEXC API client and periodically schedules the funding snapshot logger.
 
-    The logger is triggered every 10 minutes, and internally decides whether to log based
+    The logger is triggered every 10 minutes and internally decides whether to log based
     on proximity to funding times. This ensures resilience in case of minor time drift or delays.
     """
     # Initialize the logger
@@ -44,9 +44,9 @@ def main():
         for t in get_next_funding_times()[:5]:
             logger.info(f"  {t.isoformat()}")
 
-        # Run every 5 minutes and internally check if it's within funding window
+        # Run every 15 minutes and internally check if it's within a funding window
         schedule.every(15).minutes.do(run_snapshot_safely, client, config['funding'])
-        logger.info("Scheduler set to run every 5 minutes")
+        logger.info("Scheduler set to run every 15 minutes")
 
         logger.info("Entering main loop")
         while True:
@@ -56,7 +56,7 @@ def main():
         logger.critical(f"Fatal error in main application: {e}", exc_info=True)
         raise
 
-def run_snapshot_safely(client, config):
+def run_snapshot_safely(client: MEXCContractClient, config: dict) -> None:
     """
     Wraps the snapshot logger in try-except for resilience.
 

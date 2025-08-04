@@ -41,7 +41,7 @@ class BaseMEXCClient:
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
-    def _get(self, endpoint: str, params: dict = None, headers: dict = None) -> dict:
+    def _get(self, endpoint: str, params: dict = None, headers: dict = None) -> any:
         """
         Performs an HTTP GET request with optional parameters and headers, including a timeout.
 
@@ -51,8 +51,8 @@ class BaseMEXCClient:
         :type params: dict
         :param headers: Optional HTTP headers (e.g., for authentication).
         :type headers: dict
-        :return: JSON-decoded response as a dictionary.
-        :rtype: dict
+        :return: JSON-decoded response (can be dict, list, or other JSON types).
+        :rtype: any
         :raises RuntimeError: If the HTTP request fails or returns a non-200 status code.
         """
         self.logger.debug(f"Making GET request to {endpoint} with params: {params}")
