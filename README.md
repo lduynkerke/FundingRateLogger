@@ -174,6 +174,7 @@ FundingRateLogger/
 │   ├── test_implementation.py
 │   └── test_logging.py
 ├── logs/                     # Log files directory
+├── .gitignore                # Git ignore file for Python projects
 ├── config.yaml               # Configuration file
 ├── conftest.py               # Pytest configuration
 ├── main.py                   # Application entry point
@@ -218,3 +219,26 @@ python tests/test_funding_logger.py
 ```
 
 This will verify that the logger is properly configured and that API client logging is working correctly.
+
+## Deployment
+
+For deploying this application on a Linux server, a deployment script is provided:
+
+1. Make the deployment script executable:
+   ```bash
+   chmod +x deploy.sh
+   ```
+
+2. Run the deployment script:
+   ```bash
+   ./deploy.sh
+   ```
+
+The script will:
+- Check if Python 3.8+ is installed
+- Create a Python virtual environment
+- Install all required dependencies
+- Create a systemd service for the application
+- Start the service
+
+For detailed deployment instructions, see [Deployment Guide](deployment_guide.md).
