@@ -242,11 +242,12 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
 
             for interval, candles in candle_data.items():
                 for candle in candles:
+                    timestamp = int(candle[0]) // 1000 if isinstance(candle[0], str) else candle[0] // 1000
                     writer.writerow([
                         symbol,
                         funding_time.isoformat(),
                         interval,
-                        datetime.fromtimestamp(candle[0] // 1000, timezone.utc).isoformat(),
+                        datetime.fromtimestamp(timestamp, timezone.utc).isoformat(),
                         *candle[1:]
                     ])
         
