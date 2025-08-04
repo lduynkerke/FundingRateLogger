@@ -45,7 +45,7 @@ def main():
             logger.info(f"  {t.isoformat()}")
 
         # Run every 5 minutes and internally check if it's within funding window
-        schedule.every(5).minutes.do(run_snapshot_safely, client)
+        schedule.every(15).minutes.do(run_snapshot_safely, client, config['funding'])
         logger.info("Scheduler set to run every 5 minutes")
 
         logger.info("Entering main loop")
@@ -56,17 +56,19 @@ def main():
         logger.critical(f"Fatal error in main application: {e}", exc_info=True)
         raise
 
-def run_snapshot_safely(client):
+def run_snapshot_safely(client, config):
     """
     Wraps the snapshot logger in try-except for resilience.
 
     :param client: Initialized MEXCContractClient.
     :type client: MEXCContractClient
+    :param config: Configuration dictionary containing funding settings.
+    :type config: dict
     """
     logger = get_logger()
     try:
         logger.debug("Starting funding snapshot execution")
-        log_funding_snapshot(client)
+        log_funding_snapshot(client, config=config)
         logger.info(f"Snapshot executed successfully at {datetime.now(timezone.utc).isoformat()}")
     except Exception as e:
         logger.error(f"Error during snapshot execution: {e}", exc_info=True)

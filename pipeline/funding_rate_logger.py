@@ -47,13 +47,13 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3) -> list[str]:
         logger.error(f"Error fetching top symbols: {e}")
         return []
 
-def log_funding_snapshot(client: MEXCContractClient) -> None:
+def log_funding_snapshot(client: MEXCContractClient, config) -> None:
     """
     Logs funding rate snapshot and OHLCV data if within 15 or 10 minutes before a funding event.
 
     This function implements a two-phase data collection strategy:
     1. At 15 minutes before funding: Identifies and caches the top symbols with highest funding rates
-    2. At 10 minutes before funding: Retrieves the cached symbols and collects OHLCV data for them
+    2. At 15 minutes after funding: Retrieves the cached symbols and collects OHLCV data for them
     
     The function should be called periodically (e.g., every 5 minutes) and will automatically
     determine when to perform each action based on proximity to funding times.
@@ -63,6 +63,8 @@ def log_funding_snapshot(client: MEXCContractClient) -> None:
 
     :param client: Initialized MEXCContractClient.
     :type client: MEXCContractClient
+    :param config: Configuration dictionary containing funding settings.
+    :type config: dict
     :return: None
     """
     logger = get_logger()
@@ -75,27 +77,27 @@ def log_funding_snapshot(client: MEXCContractClient) -> None:
         logger.debug(f"Next funding time: {next_funding.isoformat()}")
 
         for funding_time in funding_times:
-            delta = (funding_time - now).total_seconds() / 60
+            delta = (now - funding_time).total_seconds() / 60
             logger.debug(f"Checking funding time {funding_time.isoformat()}, delta: {delta:.2f} minutes")
 
-            if 14 <= delta <= 15:
+            if -15 <= delta < 0:
                 logger.info(f"15-minute window before funding at {funding_time.isoformat()}, caching top symbols")
-                top3_symbols = fetch_top_symbols(client, top_n=3)
-                cache_top_symbols(funding_time, top3_symbols)
-                logger.info(f"Top 3 symbols cached at {now.isoformat()} for {funding_time.isoformat()}: {', '.join(top3_symbols)}")
+                top3_symbols = fetch_top_symbols(client, top_n=config.get('top_n', 5))
+                cache_top_symbols(top3_symbols, funding_time, cache_dir=CACHE_DIR)
+                logger.info(f"Top 5 symbols cached at {now.isoformat()} for {funding_time.isoformat()}: {', '.join(top3_symbols)}")
 
-            if 9 <= delta <= 10:
-                logger.info(f"10-minute window before funding at {funding_time.isoformat()}, collecting data")
-                top3_symbols = load_cached_symbols(funding_time)
+            if 15 <= delta <= 30:
+                logger.info(f"15-minute window after funding at {funding_time.isoformat()}, collecting data")
+                top3_symbols = load_cached_symbols(funding_time, cache_dir=CACHE_DIR)
                 logger.info(f"Loaded cached symbols for {funding_time.isoformat()}: {', '.join(top3_symbols)}")
                 for symbol in top3_symbols:
-                    collect_and_save_data(client, symbol, funding_time)
+                    collect_and_save_data(client, symbol, funding_time, config)
                 logger.info(f"Data collection completed for {funding_time.isoformat()} at {now.isoformat()}")
     except Exception as e:
         logger.error(f"Error in log_funding_snapshot: {e}")
         raise
 
-def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time: datetime) -> None:
+def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time: datetime, config) -> None:
     """
     Collects OHLCV candles and saves them to CSV for a given symbol and funding time.
     
@@ -114,14 +116,15 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
     :type symbol: str
     :param funding_time: The datetime of the funding rate payout.
     :type funding_time: datetime
+    :param config: Configuration dictionary containing funding settings, especially time_windows.
+    :type config: dict
     :return: None
     """
     logger = get_logger()
     logger.info(f"Collecting data for {symbol} at funding time {funding_time.isoformat()}")
     
     try:
-        config = load_config()
-        time_windows = config.get('funding', {}).get('time_windows', {})
+        time_windows = config.get('time_windows', {})
         
         days_back = time_windows.get('daily_days_back', 3)
         hourly_back = time_windows.get('hourly_hours_back', 4)
@@ -180,7 +183,7 @@ def get_next_funding_times(reference_time: datetime = None) -> list[datetime]:
     :rtype: list[datetime]
     """
     if reference_time is None:
-        reference_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+        reference_time = datetime.now(timezone.utc)
 
     today = reference_time.date()
     funding_hours = [0, 4, 8, 16, 20]

@@ -1,6 +1,6 @@
 mexc:
-  api_key: "mx0vglNnaHmyUVp3JG "
-  secret_key: "bba8cfe8ec144476909f3a1d09aa295a"
+  api_key: "mx0vglNnaHmyUVp3JG"
+  secret_key: "your_secret_key_here"
   base_urls:
     spot: "https://api.mexc.com"
     contract: "https://contract.mexc.com"
@@ -18,10 +18,10 @@ logging:
 funding:
   snapshot_window_minutes: 10
   log_interval_hours: 4
-  top_n_symbols: 3
+  top_n_symbols: 5
   time_windows:
     daily_days_back: 3
     hourly_hours_back: 8
-    ten_min_hours_before: 1
-    one_min_minutes_before: 10
-    one_min_minutes_after: 10
+    ten_min_hours_before: 2
+    one_min_minutes_before: 15
+    one_min_minutes_after: 15
