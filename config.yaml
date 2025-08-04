@@ -1,0 +1,27 @@
+mexc:
+  api_key: "mx0vglNnaHmyUVp3JG "
+  secret_key: "bba8cfe8ec144476909f3a1d09aa295a"
+  base_urls:
+    spot: "https://api.mexc.com"
+    contract: "https://contract.mexc.com"
+  timeout: 10
+
+logging:
+  log_dir: "logs"
+  log_file: "funding_log.csv"
+  log_level: "INFO"
+  console_log_level: "WARNING"
+  file_log_level: "INFO"
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  max_log_files: 30
+
+funding:
+  snapshot_window_minutes: 10
+  log_interval_hours: 4
+  top_n_symbols: 3
+  time_windows:
+    daily_days_back: 3
+    hourly_hours_back: 8
+    ten_min_hours_before: 1
+    one_min_minutes_before: 10
+    one_min_minutes_after: 10

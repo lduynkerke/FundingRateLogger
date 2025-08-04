@@ -1,0 +1,191 @@
+2025-08-02 23:36:51,207 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:36:51,207 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:36:51,207 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:36:51,208 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:36:51,209 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:37:06,228 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:37:06,229 - funding_rate_strategy - INFO - Initializing spot client with base URL: https://api.mexc.com
+2025-08-02 23:37:06,554 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:37:14,947 - funding_rate_strategy - INFO - Writing 4 candles to CSV for BTC_USDT
+2025-08-02 23:37:14,948 - funding_rate_strategy - INFO - Successfully saved data to <MagicMock name='Path()' id='2579731934016'>
+2025-08-02 23:37:14,950 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:37:14,950 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,952 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:37:14,952 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:37:14,953 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,953 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,955 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:37:14,955 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,955 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:37:14,957 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:37:14,957 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:37:14,959 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:37:14,959 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:37:14,963 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:37:14,963 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:37:14,963 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,963 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,964 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:37:14,964 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:37:14,964 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:37:14,965 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:37:14,966 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:37:14,966 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:37:14,973 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:39:09,907 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:39:09,908 - funding_rate_strategy - INFO - Initializing spot client with base URL: https://api.mexc.com
+2025-08-02 23:39:10,228 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:39:18,420 - funding_rate_strategy - INFO - Writing 4 candles to CSV for BTC_USDT
+2025-08-02 23:39:18,421 - funding_rate_strategy - INFO - Successfully saved data to <MagicMock name='Path()' id='2588249729232'>
+2025-08-02 23:39:18,423 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:39:18,423 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,425 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:39:18,425 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:39:18,426 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,426 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,429 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:39:18,429 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,429 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:39:18,431 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:39:18,432 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:39:18,433 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:39:18,433 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:39:18,436 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:39:18,436 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:39:18,436 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,436 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,437 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:39:18,437 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:39:18,437 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:39:18,438 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:39:18,438 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:39:18,438 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:39:18,440 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:43:28,853 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:43:28,853 - funding_rate_strategy - INFO - Initializing spot client with base URL: https://api.mexc.com
+2025-08-02 23:43:29,160 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:43:37,665 - funding_rate_strategy - INFO - Writing 4 candles to CSV for BTC_USDT
+2025-08-02 23:43:37,666 - funding_rate_strategy - INFO - Successfully saved data to <MagicMock name='Path()' id='2227674947920'>
+2025-08-02 23:43:37,667 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:43:37,668 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,669 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:43:37,669 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:43:37,669 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,670 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,671 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:43:37,671 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,671 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:43:37,673 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:43:37,673 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:43:37,675 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:43:37,675 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:43:37,677 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:43:37,677 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:43:37,677 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,677 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,678 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:43:37,678 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:43:37,678 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:43:37,680 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:43:37,680 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:43:37,680 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:43:37,682 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:43:38,892 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:43:38,893 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:43:38,893 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:43:38,893 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:43:38,894 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:45:47,788 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:45:47,788 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:45:47,788 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:45:47,788 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:45:47,789 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:46:20,142 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:46:20,142 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:46:20,142 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:46:20,142 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:46:20,143 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:46:41,232 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:46:41,232 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:46:41,233 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:46:41,233 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:46:41,234 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:47:04,474 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:47:04,474 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:47:04,474 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:47:04,474 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:47:04,476 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:49:23,853 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:49:23,853 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:49:23,853 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:49:23,854 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:49:23,855 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:49:30,657 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:49:30,657 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:49:30,657 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:49:30,660 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:49:30,660 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:49:30,660 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:49:30,660 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:49:30,660 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:49:30,660 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:49:30,661 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:50:10,217 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:50:10,217 - funding_rate_strategy - INFO - Initializing spot client with base URL: https://api.mexc.com
+2025-08-02 23:50:10,536 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:50:18,816 - funding_rate_strategy - INFO - Writing 4 candles to CSV for BTC_USDT
+2025-08-02 23:50:18,816 - funding_rate_strategy - INFO - Successfully saved data to <MagicMock name='Path()' id='1316678781552'>
+2025-08-02 23:50:18,818 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:50:18,818 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,821 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:50:18,821 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:50:18,821 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,821 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,823 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:50:18,823 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,823 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:50:18,824 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:50:18,824 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:50:18,826 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:50:18,826 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:50:18,828 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:50:18,828 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:50:18,828 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,828 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,829 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:50:18,829 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:50:18,829 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:50:18,830 - funding_rate_strategy - INFO - This is an info message from test_logging.py
+2025-08-02 23:50:18,830 - funding_rate_strategy - WARNING - This is a warning message from test_logging.py
+2025-08-02 23:50:18,830 - funding_rate_strategy - ERROR - This is an error message from test_logging.py
+2025-08-02 23:50:18,835 - funding_rate_strategy - INFO - Initializing contract client with base URL: https://contract.mexc.com
+2025-08-02 23:54:59,061 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:54:59,061 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:54:59,062 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:54:59,064 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:54:59,064 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:54:59,064 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:54:59,064 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:54:59,065 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:54:59,065 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:54:59,065 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:55:44,815 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:55:44,815 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:55:44,816 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:55:44,816 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:55:44,817 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:55:44,817 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:55:44,817 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:55:44,818 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:55:44,818 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:55:44,818 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
+2025-08-02 23:56:17,685 - funding_rate_strategy - INFO - Logger initialized
+2025-08-02 23:56:17,685 - funding_rate_strategy - INFO - Fetching top 3 symbols with highest funding rates
+2025-08-02 23:56:17,685 - funding_rate_strategy - INFO - Successfully fetched top 3 symbols: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:56:17,686 - funding_rate_strategy - INFO - 15-minute window before funding at 2025-08-02T16:00:00+00:00, caching top symbols
+2025-08-02 23:56:17,686 - funding_rate_strategy - INFO - Top 3 symbols cached at 2025-08-02T15:45:00+00:00 for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:56:17,687 - funding_rate_strategy - INFO - 10-minute window before funding at 2025-08-02T16:00:00+00:00, collecting data
+2025-08-02 23:56:17,687 - funding_rate_strategy - INFO - Loaded cached symbols for 2025-08-02T16:00:00+00:00: BTC_USDT, ETH_USDT, SOL_USDT
+2025-08-02 23:56:17,687 - funding_rate_strategy - INFO - Data collection completed for 2025-08-02T16:00:00+00:00 at 2025-08-02T15:50:00+00:00
+2025-08-02 23:56:17,688 - funding_rate_strategy - INFO - Collecting data for BTC_USDT at funding time 2025-08-02T16:00:00+00:00
+2025-08-02 23:56:17,688 - funding_rate_strategy - INFO - Successfully collected and saved data for BTC_USDT
