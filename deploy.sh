@@ -25,19 +25,6 @@ fi
 
 echo "Python version $python_version detected."
 
-# Create requirements.txt if it doesn't exist
-if [[ ! -f "requirements.txt" ]]; then
-    echo "Creating requirements.txt file..."
-    cat > requirements.txt << EOF
-schedule>=1.1.0
-requests>=2.28.0
-pyyaml>=6.0
-httpx>=0.23.0
-pytest>=7.0.0  # For running tests
-EOF
-    echo "requirements.txt created."
-fi
-
 # Create virtual environment
 echo "Creating Python virtual environment..."
 python3 -m venv venv
