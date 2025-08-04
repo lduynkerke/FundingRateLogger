@@ -8,7 +8,6 @@ mexc:
 
 logging:
   log_dir: "logs"
-  log_file: "funding_log.csv"
   log_level: "INFO"
   console_log_level: "WARNING"
   file_log_level: "INFO"

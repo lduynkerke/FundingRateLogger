@@ -31,6 +31,7 @@ def logger():
     Returns:
         logging.Logger: A fully configured logger instance.
     """
+    # setup_logger can now handle None config properly
     return setup_logger()
 
 

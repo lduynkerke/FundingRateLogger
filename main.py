@@ -28,13 +28,13 @@ def main() -> None:
     The logger is triggered every 10 minutes and internally decides whether to log based
     on proximity to funding times. This ensures resilience in case of minor time drift or delays.
     """
-    # Initialize the logger
-    logger = setup_logger()
-    logger.info("Starting Funding Rate Strategy application")
-    
     try:
         config = load_config()
+        
+        # Initialize the logger
+        logger = setup_logger(config['logging'])
         logger.info("Configuration loaded successfully")
+        logger.info("Starting Funding Rate Strategy application")
         
         client = MEXCContractClient(config=config['mexc'])
         logger.info("MEXC client initialized")
@@ -65,7 +65,7 @@ def run_snapshot_safely(client: MEXCContractClient, config: dict) -> None:
     :param config: Configuration dictionary containing funding settings.
     :type config: dict
     """
-    logger = get_logger()
+    logger = get_logger()  # Use the already initialized logger
     try:
         logger.debug("Starting funding snapshot execution")
         log_funding_snapshot(client, config=config)
