@@ -217,3 +217,39 @@ class MEXCContractClient(BaseMEXCClient):
         except Exception as e:
             self.logger.error(f"Error getting top funding rates: {e}")
             return []
+            
+    def get_next_funding_time(self, symbol: str) -> int:
+        """
+        Gets the next funding time (nextSettleTime) for a specific symbol.
+        
+        :param symbol: Contract symbol (e.g., 'BTC_USDT').
+        :type symbol: str
+        :return: Unix timestamp in milliseconds for the next funding time, or 0 if not available.
+        :rtype: int
+        """
+        self.logger.debug(f"Getting next funding time for {symbol}")
+        try:
+            url = f"{self.base_url}/api/v1/contract/funding_rate/{symbol}"
+            result = self._get(url)
+            
+            if isinstance(result, dict) and 'success' in result:
+                if result.get('success') is False:
+                    error_code = result.get('code', 'unknown')
+                    error_msg = result.get('message', 'No error message provided')
+                    self.logger.error(f"Error fetching next funding time for {symbol}: code={error_code}, message={error_msg}")
+                    return 0
+                
+                # If success is True, extract the nextSettleTime from the data field
+                data = result.get('data', {})
+                next_settle_time = data.get('nextSettleTime', 0)
+                self.logger.debug(f"Next funding time for {symbol}: {next_settle_time}")
+                return next_settle_time
+            
+            # If result is not in the expected format, try to extract the nextSettleTime anyway
+            data = result.get('data', {})
+            next_settle_time = data.get('nextSettleTime', 0)
+            self.logger.debug(f"Next funding time for {symbol}: {next_settle_time}")
+            return next_settle_time
+        except Exception as e:
+            self.logger.error(f"Error getting next funding time for {symbol}: {e}")
+            return 0

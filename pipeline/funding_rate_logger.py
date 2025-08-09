@@ -25,25 +25,56 @@ from utils.logger import get_logger
 
 CACHE_DIR = Path("cache/funding_rates")
 
-def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3) -> list[str]:
+def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, next_funding_minutes: int = 15) -> list[str]:
     """
-    Fetches the top 3 symbols with highest absolute funding rates.
+    Fetches the top symbols with highest absolute funding rates that have funding within the specified time window.
 
     :param client: Initialized MEXCContractClient.
     :type client: MEXCContractClient
     :param top_n: Number of top symbols to return.
     :type top_n: int
-    :return: List of top 3 symbols.
+    :param next_funding_minutes: Only include symbols with funding within this many minutes.
+    :type next_funding_minutes: int
+    :return: List of top symbols with imminent funding.
     :rtype: list[str]
     """
     logger = get_logger()
-    logger.info(f"Fetching top {top_n} symbols with highest funding rates")
+    logger.info(f"Fetching top {top_n} symbols with highest funding rates and funding within {next_funding_minutes} minutes")
     try:
+        now = datetime.now(timezone.utc)
         symbols = client.get_available_perpetual_symbols()
-        top_rates = client.get_top_funding_rates(symbols, top_n=top_n)
-        top_symbols = [entry['symbol'] for entry in top_rates]
-        logger.info(f"Successfully fetched top {len(top_symbols)} symbols: {', '.join(top_symbols)}")
-        return top_symbols
+        
+        fetch_count = min(top_n * 5, len(symbols))  # Get 3x more to have enough after filtering
+        top_rates = client.get_top_funding_rates(symbols, top_n=fetch_count)
+        
+        symbols_with_imminent_funding = []
+        for entry in top_rates:
+            symbol = entry['symbol']
+            
+            next_settle_time = entry.get('nextSettleTime', 0)
+            
+            # If nextSettleTime is not in the entry, we need to fetch it separately
+            if next_settle_time == 0:
+                logger.debug(f"nextSettleTime not found in entry for {symbol}, fetching separately")
+                next_settle_time = client.get_next_funding_time(symbol)
+            
+            if next_settle_time > 0:
+                next_settle_time_sec = next_settle_time / 1000
+                time_until_funding_sec = next_settle_time_sec - now.timestamp()
+                time_until_funding_min = time_until_funding_sec / 60
+                
+                logger.debug(f"Symbol {symbol} next funding time: {datetime.fromtimestamp(next_settle_time_sec, timezone.utc).isoformat()}, minutes until funding: {time_until_funding_min:.2f}")
+                
+                # Check if funding is within the specified window
+                if 0 < time_until_funding_min <= next_funding_minutes:
+                    symbols_with_imminent_funding.append(symbol)
+                    logger.info(f"Symbol {symbol} will be funded in {time_until_funding_min:.2f} minutes")
+                    
+                    if len(symbols_with_imminent_funding) >= top_n:
+                        break
+        
+        logger.info(f"Successfully fetched {len(symbols_with_imminent_funding)} symbols with imminent funding: {', '.join(symbols_with_imminent_funding)}")
+        return symbols_with_imminent_funding
     except Exception as e:
         logger.error(f"Error fetching top symbols: {e}")
         return []
@@ -75,25 +106,35 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
     try:
         funding_times = get_next_funding_times(now)
         next_funding = min(funding_times, key=lambda ft: abs((ft - now).total_seconds()))
-        logger.debug(f"Next funding time: {next_funding.isoformat()}")
+        logger.debug(f"Next reference funding time: {next_funding.isoformat()}")
 
+        # Directly fetch top symbols with funding within the next 15 minutes
+        symbols_with_imminent_funding = fetch_top_symbols(
+            client, 
+            top_n=config.get('top_n', 5),
+            next_funding_minutes=15
+        )
+        
+        if symbols_with_imminent_funding:
+            cache_top_symbols(symbols_with_imminent_funding, next_funding, cache_dir=CACHE_DIR)
+            logger.info(f"Cached {len(symbols_with_imminent_funding)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbols_with_imminent_funding)}")
+        else:
+            logger.info("No symbols found with funding within the next 15 minutes")
+        
+        # Check for post-funding data collection (15-30 minutes after funding)
         for funding_time in funding_times:
             delta = (now - funding_time).total_seconds() / 60
-            logger.debug(f"Checking funding time {funding_time.isoformat()}, delta: {delta:.2f} minutes")
-
-            if -15 <= delta < 0:
-                logger.info(f"15-minute window before funding at {funding_time.isoformat()}, caching top symbols")
-                top_symbols = fetch_top_symbols(client, top_n=config.get('top_n', 5))
-                cache_top_symbols(top_symbols, funding_time, cache_dir=CACHE_DIR)
-                logger.info(f"Top 5 symbols cached at {now.isoformat()} for {funding_time.isoformat()}: {', '.join(top_symbols)}")
-
+            
             if 15 <= delta <= 30:
                 logger.info(f"15-minute window after funding at {funding_time.isoformat()}, collecting data")
-                top3_symbols = load_cached_symbols(funding_time, cache_dir=CACHE_DIR)
-                logger.info(f"Loaded cached symbols for {funding_time.isoformat()}: {', '.join(top3_symbols)}")
-                for symbol in top3_symbols:
-                    collect_and_save_data(client, symbol, funding_time, config)
-                logger.info(f"Data collection completed for {funding_time.isoformat()} at {now.isoformat()}")
+                cached_symbols = load_cached_symbols(funding_time, cache_dir=CACHE_DIR)
+                if cached_symbols:
+                    logger.info(f"Loaded cached symbols for {funding_time.isoformat()}: {', '.join(cached_symbols)}")
+                    for symbol in cached_symbols:
+                        collect_and_save_data(client, symbol, funding_time, config)
+                    logger.info(f"Data collection completed for {funding_time.isoformat()} at {now.isoformat()}")
+                else:
+                    logger.info(f"No cached symbols found for {funding_time.isoformat()}")
     except Exception as e:
         logger.error(f"Error in log_funding_snapshot: {e}")
         raise
@@ -203,14 +244,16 @@ def get_next_funding_times(reference_time: datetime = None) -> list[datetime]:
         reference_time = datetime.now(timezone.utc)
 
     today = reference_time.date()
-    funding_hours = [0, 4, 8, 16, 20]
+    funding_hours = list(range(24))  # 0 to 23 hours
 
     times = [datetime(today.year, today.month, today.day, h, 0, 0, tzinfo=timezone.utc)
              for h in funding_hours]
 
     prev_day = today - timedelta(days=1)
     next_day = today + timedelta(days=1)
-    times.append(datetime(prev_day.year, prev_day.month, prev_day.day, 16, 0, 0, tzinfo=timezone.utc))
+
+    # Add last hour of previous day and first hour of next day to handle boundary cases
+    times.append(datetime(prev_day.year, prev_day.month, prev_day.day, 23, 0, 0, tzinfo=timezone.utc))
     times.append(datetime(next_day.year, next_day.month, next_day.day, 0, 0, 0, tzinfo=timezone.utc))
     return sorted(times)
 
