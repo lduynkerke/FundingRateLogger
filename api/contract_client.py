@@ -68,6 +68,8 @@ class MEXCContractClient(BaseMEXCClient):
     async def _gather_funding_rates(self, symbols: List[str], max_concurrent_requests: int = 10) -> List[Dict[str, any]]:
         """
         Gathers funding rates for all provided symbols asynchronously.
+        Respects MEXC API rate limits by using a semaphore to limit concurrent requests
+        and adding delays between batches of requests.
 
         :param symbols: List of contract symbols.
         :type symbols: list[str]
@@ -77,9 +79,25 @@ class MEXCContractClient(BaseMEXCClient):
         :rtype: list[dict]
         """
         semaphore = asyncio.Semaphore(max_concurrent_requests)
-        tasks = [self._fetch_funding_rate(symbol, semaphore) for symbol in symbols]
-        results = await asyncio.gather(*tasks)
-        return [res for res in results if res]
+        results = []
+        
+        # Process symbols in batches to respect rate limits
+        batch_size = max_concurrent_requests
+        for i in range(0, len(symbols), batch_size):
+            batch = symbols[i:i+batch_size]
+            self.logger.debug(f"Processing batch {i//batch_size + 1}/{(len(symbols) + batch_size - 1)//batch_size} with {len(batch)} symbols")
+            
+            # Create and execute tasks for the current batch
+            tasks = [self._fetch_funding_rate(symbol, semaphore) for symbol in batch]
+            batch_results = await asyncio.gather(*tasks)
+            results.extend([res for res in batch_results if res])
+            
+            if i + batch_size < len(symbols):
+                delay = 1.0  # 1 second delay between batches
+                self.logger.debug(f"Rate limit delay: waiting {delay} seconds before next batch")
+                await asyncio.sleep(delay)
+        
+        return results
 
     def get_futures_ohlcv(self, symbol: str, interval: str = "Min1", start: int = None, end: int = None) -> List[list]:
         """
@@ -179,6 +197,11 @@ class MEXCContractClient(BaseMEXCClient):
     def get_all_funding_rates_async(self, symbols: List[str], max_concurrent_requests: int = 10) -> List[Dict[str, any]]:
         """
         Public method to fetch funding rates for multiple symbols asynchronously.
+        
+        This method respects MEXC API rate limits by:
+        1. Limiting the number of concurrent requests using a semaphore
+        2. Processing symbols in batches equal to max_concurrent_requests
+        3. Adding a 1-second delay between batches to avoid rate limit errors
 
         :param symbols: List of contract symbols.
         :type symbols: list[str]
