@@ -222,23 +222,90 @@ This will verify that the logger is properly configured and that API client logg
 
 ## Deployment
 
-For deploying this application on a Linux server, a deployment script is provided:
+### Prerequisites
 
-1. Make the deployment script executable:
+- Linux server with systemd
+- Python 3.8 or higher
+- sudo privileges
+
+### Deployment Steps
+
+1. Clone the repository to your server:
+   ```bash
+   git clone https://github.com/yourusername/FundingRateLogger.git
+   cd FundingRateLogger
+   ```
+
+2. Update the configuration file with your MEXC API credentials:
+   ```bash
+   nano config.yaml
+   ```
+   
+   Update the following lines with your actual API credentials:
+   ```yaml
+   mexc:
+     api_key: "your_api_key_here"
+     secret_key: "your_secret_key_here"
+   ```
+
+3. Make the deployment script executable:
    ```bash
    chmod +x deploy.sh
    ```
 
-2. Run the deployment script:
+4. Run the deployment script:
    ```bash
    ./deploy.sh
    ```
 
-The script will:
-- Check if Python 3.8+ is installed
-- Create a Python virtual environment
-- Install all required dependencies
-- Create a systemd service for the application
-- Start the service
+   The script will:
+   - Check if Python 3.8+ is installed
+   - Create a Python virtual environment
+   - Install all required dependencies
+   - Create a systemd service for the application
+   - Start the service
 
-For detailed deployment instructions, see [Deployment Guide](deployment_guide.md).
+5. Verify the service is running:
+   ```bash
+   sudo systemctl status fundingratelogger.service
+   ```
+
+### Managing the Service
+
+- **Check service status**:
+  ```bash
+  sudo systemctl status fundingratelogger.service
+  ```
+
+- **View logs**:
+  ```bash
+  sudo journalctl -u fundingratelogger.service
+  ```
+
+- **Restart the service**:
+  ```bash
+  sudo systemctl restart fundingratelogger.service
+  ```
+
+- **Stop the service**:
+  ```bash
+  sudo systemctl stop fundingratelogger.service
+  ```
+
+### Application Logs
+
+Application logs are stored in the `logs` directory. The log files are named with the date format `app_YYYYMMDD.log`.
+
+### Troubleshooting
+
+1. **Service fails to start**:
+   - Check the logs: `sudo journalctl -u fundingratelogger.service`
+   - Verify your API credentials in `config.yaml`
+   - Ensure Python 3.8+ is installed: `python3 --version`
+
+2. **Missing dependencies**:
+   - Manually install dependencies: `pip install -r requirements.txt`
+
+3. **Permission issues**:
+   - Ensure the user has write permissions to the application directory
+   - Check if the logs directory exists and is writable
