@@ -34,6 +34,27 @@ class MEXCSpotClient(BaseMEXCClient):
         :return: List of [timestamp, open, high, low, close, volume]
         :rtype: list[list]
         """
-        endpoint = f"{self.base_url}/api/v3/klines"
-        params = {"symbol": symbol, "interval": interval, "limit": limit}
-        return self._get(endpoint, params=params)
+        self.logger.debug(f"Fetching OHLCV data for {symbol}, interval={interval}, limit={limit}")
+        
+        try:
+            endpoint = f"{self.base_url}/api/v3/klines"
+            params = {"symbol": symbol, "interval": interval, "limit": limit}
+            result = self._get(endpoint, params=params)
+            
+            if isinstance(result, dict) and 'success' in result:
+                if result.get('success') is False:
+                    error_code = result.get('code', 'unknown')
+                    error_msg = result.get('message', 'No error message provided')
+                    self.logger.error(f"Error fetching OHLCV data for {symbol}: code={error_code}, message={error_msg}")
+                    return []
+                
+                # If success is True, return the data field
+                data = result.get('data', [])
+                self.logger.debug(f"Successfully fetched OHLCV data for {symbol}")
+                return data
+            
+            self.logger.debug(f"Successfully fetched {len(result) if isinstance(result, list) else 'unknown'} OHLCV candles for {symbol}")
+            return result
+        except Exception as e:
+            self.logger.error(f"Error fetching OHLCV data for {symbol}: {e}")
+            raise

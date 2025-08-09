@@ -114,7 +114,7 @@ def test_fetch_ohlcv_futures(contract_client):
     
     This test verifies that:
     - The client can successfully retrieve futures candlestick data
-    - The response has the correct structure (dictionary with success flag)
+    - The response has the correct structure (dictionary with data fields)
     - The data contains all required fields (time, open, high, low, close, volume)
     - All data arrays have the same length and contain numeric values
     
@@ -125,10 +125,7 @@ def test_fetch_ohlcv_futures(contract_client):
     start = now - 120
     end = now
 
-    response = contract_client.get_futures_ohlcv("BTC_USDT", interval="Min1", start=start, end=end)
-    assert isinstance(response, dict)
-    assert response.get('success') is True
-    data = response.get('data')
+    data = contract_client.get_futures_ohlcv("BTC_USDT", interval="Min1", start=start, end=end)
     assert isinstance(data, dict)
 
     keys_required = {"time", "open", "high", "low", "close", "vol"}

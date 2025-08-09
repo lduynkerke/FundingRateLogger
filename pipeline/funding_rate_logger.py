@@ -149,19 +149,35 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
 
         logger.debug(f"Fetching daily candles for {symbol}: {daily_start} to {daily_end}")
         candles_daily = client.get_futures_ohlcv(symbol, 'Day1', daily_start, daily_end)
-        logger.debug(f"Fetched {len(candles_daily)} daily candles")
+        if isinstance(candles_daily, dict) and 'time' in candles_daily:
+            candles_daily_len = len(candles_daily.get('time', []))
+            logger.debug(f"Fetched {candles_daily_len} daily candles")
+        else:
+            logger.debug(f"Fetched {len(candles_daily) if isinstance(candles_daily, list) else 0} daily candles")
         
         logger.debug(f"Fetching hourly candles for {symbol}: {hourly_start} to {hourly_end}")
         candles_1h = client.get_futures_ohlcv(symbol, 'Hour1', hourly_start, hourly_end)
-        logger.debug(f"Fetched {len(candles_1h)} hourly candles")
+        if isinstance(candles_1h, dict) and 'time' in candles_1h:
+            candles_1h_len = len(candles_1h.get('time', []))
+            logger.debug(f"Fetched {candles_1h_len} hourly candles")
+        else:
+            logger.debug(f"Fetched {len(candles_1h) if isinstance(candles_1h, list) else 0} hourly candles")
         
         logger.debug(f"Fetching 10m candles for {symbol}: {ten_min_start} to {ten_min_end}")
         candles_10m = client.get_futures_ohlcv(symbol, 'Min10', ten_min_start, ten_min_end)
-        logger.debug(f"Fetched {len(candles_10m)} 10m candles")
+        if isinstance(candles_10m, dict) and 'time' in candles_10m:
+            candles_10m_len = len(candles_10m.get('time', []))
+            logger.debug(f"Fetched {candles_10m_len} 10m candles")
+        else:
+            logger.debug(f"Fetched {len(candles_10m) if isinstance(candles_10m, list) else 0} 10m candles")
         
         logger.debug(f"Fetching 1m candles for {symbol}: {one_min_start} to {one_min_end}")
         candles_1m = client.get_futures_ohlcv(symbol, 'Min1', one_min_start, one_min_end)
-        logger.debug(f"Fetched {len(candles_1m)} 1m candles")
+        if isinstance(candles_1m, dict) and 'time' in candles_1m:
+            candles_1m_len = len(candles_1m.get('time', []))
+            logger.debug(f"Fetched {candles_1m_len} 1m candles")
+        else:
+            logger.debug(f"Fetched {len(candles_1m) if isinstance(candles_1m, list) else 0} 1m candles")
 
         data = {'daily': candles_daily, '1h': candles_1h, '10m': candles_10m, '1m': candles_1m}
         save_data_to_csv(symbol, funding_time, data)
@@ -214,7 +230,7 @@ def is_within_window(target_time: datetime, window_minutes: int = 10) -> bool:
     delta = abs((now - target_time).total_seconds()) / 60
     return delta <= window_minutes
 
-def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str, List[list]]) -> None:
+def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str, List[list] | dict]) -> None:
     """
     Saves the collected candle data to a CSV file.
 
@@ -222,7 +238,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     :type symbol: str
     :param funding_time: The datetime of the funding rate payout.
     :type funding_time: datetime
-    :param candle_data: Dictionary with '1m', '10m', and '1h' candle lists.
+    :param candle_data: Dictionary with '1m', '10m', and '1h' candle data (either lists or dicts).
     :type candle_data: dict
     :return: None
     """
@@ -233,7 +249,13 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     logger.debug(f"Saving data to {file_path}")
     
     try:
-        total_candles = sum(len(candles) for candles in candle_data.values())
+        total_candles = 0
+        for candles in candle_data.values():
+            if isinstance(candles, dict) and 'time' in candles:
+                total_candles += len(candles.get('time', []))
+            elif isinstance(candles, list):
+                total_candles += len(candles)
+        
         logger.info(f"Writing {total_candles} candles to CSV for {symbol}")
         
         with file_path.open('w', newline='') as csvfile:
@@ -241,15 +263,40 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
             writer.writerow(['Symbol', 'FundingTime', 'Interval', 'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
             for interval, candles in candle_data.items():
-                for candle in candles:
-                    timestamp = int(candle[0]) // 1000 if isinstance(candle[0], str) else candle[0] // 1000
-                    writer.writerow([
-                        symbol,
-                        funding_time.isoformat(),
-                        interval,
-                        datetime.fromtimestamp(timestamp, timezone.utc).isoformat(),
-                        *candle[1:]
-                    ])
+                # Handle dictionary format
+                if isinstance(candles, dict) and 'time' in candles:
+                    time_values = candles.get('time', [])
+                    open_values = candles.get('open', [])
+                    high_values = candles.get('high', [])
+                    low_values = candles.get('low', [])
+                    close_values = candles.get('close', [])
+                    vol_values = candles.get('vol', [])
+                    
+                    for i in range(len(time_values)):
+                        if i < len(open_values) and i < len(high_values) and i < len(low_values) and i < len(close_values) and i < len(vol_values):
+                            timestamp = int(time_values[i]) // 1000 if isinstance(time_values[i], str) else time_values[i] // 1000
+                            writer.writerow([
+                                symbol,
+                                funding_time.isoformat(),
+                                interval,
+                                datetime.fromtimestamp(timestamp, timezone.utc).isoformat(),
+                                open_values[i],
+                                high_values[i],
+                                low_values[i],
+                                close_values[i],
+                                vol_values[i]
+                            ])
+                # Handle list format
+                elif isinstance(candles, list):
+                    for candle in candles:
+                        timestamp = int(candle[0]) // 1000 if isinstance(candle[0], str) else candle[0] // 1000
+                        writer.writerow([
+                            symbol,
+                            funding_time.isoformat(),
+                            interval,
+                            datetime.fromtimestamp(timestamp, timezone.utc).isoformat(),
+                            *candle[1:]
+                        ])
         
         logger.info(f"Successfully saved data to {file_path}")
     except Exception as e:

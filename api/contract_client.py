@@ -45,7 +45,20 @@ class MEXCContractClient(BaseMEXCClient):
                     response = await client.get(url, timeout=10.0)
                     response.raise_for_status()
                     result = response.json()
-                    data = result.get("data")
+                    
+                    if isinstance(result, dict) and 'success' in result:
+                        if result.get('success') is False:
+                            error_code = result.get('code', 'unknown')
+                            error_msg = result.get('message', 'No error message provided')
+                            self.logger.error(f"Error fetching funding rate for {symbol}: code={error_code}, message={error_msg}")
+                            return {}
+                        
+                        # If success is True, return the data field
+                        data = result.get('data', {})
+                        self.logger.debug(f"Successfully fetched funding rate for {symbol}")
+                        return data
+                    
+                    data = result.get("data", {})
                     self.logger.debug(f"Successfully fetched funding rate for {symbol}")
                     return data
                 except Exception as e:
@@ -81,7 +94,7 @@ class MEXCContractClient(BaseMEXCClient):
         :param end: End timestamp in seconds. Defaults to now.
         :type end: int
         :return: List of [timestamp, open, high, low, close, volume]
-        :rtype: list[list]
+        :rtype: list[list] or dict
         """
         now = int(time.time())
         if start is None:
@@ -95,7 +108,22 @@ class MEXCContractClient(BaseMEXCClient):
             endpoint = f"{self.base_url}/api/v1/contract/kline/{symbol}"
             params = {"interval": interval, "start": start, "end": end}
             result = self._get(endpoint, params=params)
-            self.logger.debug(f"Successfully fetched {len(result)} OHLCV candles for {symbol}")
+            
+            # Check if result is a dictionary with success field
+            if isinstance(result, dict) and 'success' in result:
+                if result.get('success') is False:
+                    error_code = result.get('code', 'unknown')
+                    error_msg = result.get('message', 'No error message provided')
+                    self.logger.error(f"Error fetching OHLCV data for {symbol}: code={error_code}, message={error_msg}")
+                    return []
+                
+                # If success is True, return the data field
+                data = result.get('data', [])
+                self.logger.debug(f"Successfully fetched OHLCV data for {symbol}")
+                return data
+            
+            # If result is not in the expected format, return it as is
+            self.logger.debug(f"Successfully fetched {len(result) if isinstance(result, list) else 'unknown'} OHLCV candles for {symbol}")
             return result
         except Exception as e:
             self.logger.error(f"Error fetching OHLCV data for {symbol}: {e}")
@@ -114,7 +142,30 @@ class MEXCContractClient(BaseMEXCClient):
         endpoint = f"{self.base_url}/api/v1/contract/detail"
         try:
             result = self._get(endpoint, headers=None)
-            data = result.get("data")
+            
+            # Check if result is a dictionary with success field
+            if isinstance(result, dict) and 'success' in result:
+                if result.get('success') is False:
+                    error_code = result.get('code', 'unknown')
+                    error_msg = result.get('message', 'No error message provided')
+                    self.logger.error(f"Error fetching perpetual symbols: code={error_code}, message={error_msg}")
+                    return []
+                
+                # If success is True, process the data field
+                data = result.get("data", [])
+                symbols = [entry['symbol']
+                        for entry in data
+                        if 'symbol' in entry and entry.get('quoteCoin') == 'USDT'
+                        ]
+                self.logger.debug(f"Successfully fetched {len(symbols)} perpetual symbols")
+                return symbols
+            
+            # If result is not in the expected format, try to process it anyway
+            data = result.get("data", [])
+            if not data:
+                self.logger.warning("Unexpected response format when fetching perpetual symbols")
+                return []
+                
             symbols = [entry['symbol']
                     for entry in data
                     if 'symbol' in entry and entry.get('quoteCoin') == 'USDT'
