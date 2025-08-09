@@ -232,7 +232,7 @@ def is_within_window(target_time: datetime, window_minutes: int = 10) -> bool:
 
 def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str, List[list] | dict]) -> None:
     """
-    Saves the collected candle data to a CSV file.
+    Saves the collected candle data to a CSV file in the /data directory.
 
     :param symbol: Contract symbol.
     :type symbol: str
@@ -243,8 +243,13 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     :return: None
     """
     logger = get_logger()
-    timestamp_str = funding_time.strftime('%Y-%m-%d_%H-%M')
-    file_path = Path(f"funding_data_{symbol}_{timestamp_str}.csv")
+    timestamp_str = funding_time.strftime('%Y-%m-%d_%H:00')
+    
+    # Create data directory if it doesn't exist
+    data_dir = Path("data")
+    data_dir.mkdir(exist_ok=True)
+    
+    file_path = data_dir / f"{symbol}_{timestamp_str}.csv"
     
     logger.debug(f"Saving data to {file_path}")
     

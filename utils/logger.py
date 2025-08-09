@@ -7,7 +7,7 @@ that can be used throughout the application for consistent logging.
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from utils.config_loader import load_config
 
@@ -59,7 +59,17 @@ def setup_logger(log_config: dict = None):
     if logger.handlers:
         logger.handlers.clear()
     
-    timestamp = datetime.now().strftime('%Y%m%d')
+    # Get current date and find the Sunday of the current week
+    current_date = datetime.now()
+    days_since_sunday = current_date.weekday() + 1  # +1 because weekday() returns 0 for Monday
+    if days_since_sunday == 7:  # If today is Sunday
+        sunday = current_date
+    else:
+        # Go back to the previous Sunday
+        sunday = current_date - timedelta(days=days_since_sunday)
+    
+    # Format the Sunday date for the log filename
+    timestamp = sunday.strftime('%Y%m%d')
     log_filename = f"{timestamp}.log"
     log_path = Path(log_dir) / log_filename
     
