@@ -9,8 +9,8 @@ mexc:
 logging:
   log_dir: "logs"
   log_level: "DEBUG"
-  console_log_level: "WARNING"
-  file_log_level: "INFO"
+  console_log_level: "DEBUG"
+  file_log_level: "DEBUG"
   log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   max_log_files: 30
 

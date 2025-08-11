@@ -146,16 +146,20 @@ def test_log_funding_snapshot_15min_window(mock_client, funding_time, mock_confi
     """
     with patch('pipeline.funding_rate_logger.datetime') as mock_datetime:
         with patch('pipeline.funding_rate_logger.cache_top_symbols') as mock_cache:
-            # Set the current time to 15 minutes before funding
-            mock_now = datetime(2025, 8, 2, 15, 45, 0, tzinfo=timezone.utc)
-            mock_datetime.now.return_value = mock_now
-            
-            with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
-                log_funding_snapshot(mock_client, config=mock_config['funding'])
+            with patch('pipeline.funding_rate_logger.fetch_top_symbols') as mock_fetch_top:
+                # Set the current time to 15 minutes before funding
+                mock_now = datetime(2025, 8, 2, 15, 45, 0, tzinfo=timezone.utc)
+                mock_datetime.now.return_value = mock_now
                 
-                mock_cache.assert_called_once(), "cache_top_symbols should be called once"
-                assert mock_cache.call_args[0][0] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Top symbols should be passed correctly to cache_top_symbols"
-                assert mock_cache.call_args[0][1] == funding_time, "Funding time should be passed correctly to cache_top_symbols"
+                # Configure mock to return top symbols
+                mock_fetch_top.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
+                
+                with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
+                    log_funding_snapshot(mock_client, config=mock_config['funding'])
+                    
+                    mock_cache.assert_called_once(), "cache_top_symbols should be called once"
+                    assert mock_cache.call_args[0][0] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Top symbols should be passed correctly to cache_top_symbols"
+                    assert mock_cache.call_args[0][1] == funding_time, "Funding time should be passed correctly to cache_top_symbols"
 
 
 def test_log_funding_snapshot_10min_window(mock_client, funding_time, mock_config):

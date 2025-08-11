@@ -237,7 +237,7 @@ def get_next_funding_times(reference_time: datetime = None) -> list[datetime]:
 
     :param reference_time: Optional datetime to base computation on. Defaults to now.
     :type reference_time: datetime
-    :return: List of datetime objects representing payout times.
+    :return: List of datetime objects representing payout times sorted by difference to current hour (low to high).
     :rtype: list[datetime]
     """
     if reference_time is None:
@@ -255,7 +255,19 @@ def get_next_funding_times(reference_time: datetime = None) -> list[datetime]:
     # Add last hour of previous day and first hour of next day to handle boundary cases
     times.append(datetime(prev_day.year, prev_day.month, prev_day.day, 23, 0, 0, tzinfo=timezone.utc))
     times.append(datetime(next_day.year, next_day.month, next_day.day, 0, 0, 0, tzinfo=timezone.utc))
-    return sorted(times)
+    
+    current_hour = reference_time.hour
+    
+    def sort_key(dt):
+        hour_diff = abs(dt.hour - current_hour)
+        
+        if dt < reference_time and reference_time - dt <= timedelta(hours=1) or dt >= reference_time:
+            return hour_diff
+        else:
+            # If the datetime is more than one hour in the past, put it at the end
+            return float('inf')
+            
+    return sorted(times, key=sort_key)
 
 
 def is_within_window(target_time: datetime, window_minutes: int = 10) -> bool:
