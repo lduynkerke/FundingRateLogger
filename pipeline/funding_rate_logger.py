@@ -206,7 +206,7 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
             logger.debug(f"Fetched {len(candles_daily) if isinstance(candles_daily, list) else 0} daily candles")
         
         logger.debug(f"Fetching hourly candles for {symbol}: {hourly_start} to {hourly_end}")
-        candles_1h = client.get_futures_ohlcv(symbol, 'Hour1', hourly_start, hourly_end)
+        candles_1h = client.get_futures_ohlcv(symbol, 'Min60', hourly_start, hourly_end)
         if isinstance(candles_1h, dict) and 'time' in candles_1h:
             candles_1h_len = len(candles_1h.get('time', []))
             logger.debug(f"Fetched {candles_1h_len} hourly candles")

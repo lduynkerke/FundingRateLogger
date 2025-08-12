@@ -642,7 +642,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     
     # Verify correct intervals for each timeframe
     assert calls[0][0][1] == 'Day1'  # Daily candles
-    assert calls[1][0][1] == 'Hour1'  # Hourly candles
+    assert calls[1][0][1] == 'Min60'  # Hourly candles
     assert calls[2][0][1] == 'Min5'   # 5-minute candles
     assert calls[3][0][1] == 'Min1'   # 1-minute candles
     
