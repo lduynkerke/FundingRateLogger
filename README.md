@@ -127,10 +127,14 @@ The application will run continuously, checking for upcoming funding events and 
 
 The application follows this process:
 
-1. Runs every 5 minutes to check for upcoming funding events
-2. At 15-30 minutes before funding time: Identifies and caches top symbols with highest funding rates
+1. Runs every 15 minutes to check for upcoming funding events
+2. Only during the 30-45 minute window of each hour (15-30 minutes before a whole hour):
+   - Identifies and caches top symbols with highest funding rates
+   - Skips fetching symbols during the first 30 minutes or last 15 minutes of an hour
 3. At 15-30 minutes after funding time: Collects OHLCV data for the cached symbols
 4. Saves collected data to CSV files for later analysis
+
+This time-based optimization ensures that API calls are only made during relevant time windows, reducing unnecessary requests and focusing data collection on the most important periods.
 
 ### Output Files
 

@@ -340,7 +340,7 @@ def test_log_funding_snapshot_15_30min_window(
         mock_contract_client: Fixture providing a mocked MEXCContractClient
         mock_funding_time: Fixture providing a consistent funding time for testing
     """
-    # Set current time to 25 minutes before funding (within 15-30 minute window)
+    # Set current time to 35 minutes into the hour (within 30-45 minute window)
     mock_now = datetime(2025, 8, 2, 15, 35, 0, tzinfo=timezone.utc)
     mock_datetime.now.return_value = mock_now
     
@@ -377,6 +377,144 @@ def test_log_funding_snapshot_15_30min_window(
     # Verify collect_and_save_data was not called (only happens after funding)
     mock_collect_and_save.assert_not_called()
 
+
+@patch('pipeline.funding_rate_logger.datetime')
+@patch('pipeline.funding_rate_logger.get_next_funding_times')
+@patch('pipeline.funding_rate_logger.cache_top_symbols')
+@patch('pipeline.funding_rate_logger.load_cached_symbols')
+@patch('pipeline.funding_rate_logger.collect_and_save_data')
+@patch('pipeline.funding_rate_logger.fetch_top_symbols')
+def test_log_funding_snapshot_outside_window_first_30min(
+    mock_fetch_top_symbols,
+    mock_collect_and_save,
+    mock_load_cached,
+    mock_cache_top,
+    mock_get_funding_times,
+    mock_datetime,
+    mock_contract_client,
+    mock_funding_time
+):
+    """
+    Test log_funding_snapshot behavior when current time is in the first 30 minutes of an hour.
+    
+    This test verifies that when the current time is in the first 30 minutes of an hour:
+    - The function correctly identifies that we're outside the 15-30 minute window before a whole hour
+    - It does NOT fetch top symbols or cache them
+    - It still checks for post-funding data collection
+    
+    Args:
+        mock_fetch_top_symbols: Mocked fetch_top_symbols function
+        mock_collect_and_save: Mocked collect_and_save_data function
+        mock_load_cached: Mocked load_cached_symbols function
+        mock_cache_top: Mocked cache_top_symbols function
+        mock_get_funding_times: Mocked get_next_funding_times function
+        mock_datetime: Mocked datetime module
+        mock_contract_client: Fixture providing a mocked MEXCContractClient
+        mock_funding_time: Fixture providing a consistent funding time for testing
+    """
+    # Set current time to 15 minutes into the hour (first 30 minutes)
+    mock_now = datetime(2025, 8, 2, 15, 15, 0, tzinfo=timezone.utc)
+    mock_datetime.now.return_value = mock_now
+    
+    # Set up a funding time that would be 15-30 minutes in the past
+    past_funding_time = datetime(2025, 8, 2, 14, 45, 0, tzinfo=timezone.utc)  # 30 minutes ago
+    mock_get_funding_times.return_value = [past_funding_time, mock_funding_time]
+    
+    # Mock load_cached_symbols to return some symbols
+    mock_load_cached.return_value = ["BTC_USDT", "ETH_USDT"]
+    
+    # Configure mock config
+    mock_config = {
+        'top_n': 3,
+        'time_windows': {
+            'daily_days_back': 3,
+            'hourly_hours_back': 8,
+            'five_min_hours_before': 1,
+            'one_min_minutes_before': 10,
+            'one_min_minutes_after': 10
+        }
+    }
+    
+    # Call the function
+    log_funding_snapshot(mock_contract_client, config=mock_config)
+    
+    # Verify fetch_top_symbols was NOT called (we're in first 30 minutes of hour)
+    mock_fetch_top_symbols.assert_not_called()
+    
+    # Verify cache_top_symbols was NOT called
+    mock_cache_top.assert_not_called()
+    
+    # Verify load_cached_symbols was called for the past funding time
+    mock_load_cached.assert_called_with(past_funding_time, cache_dir=ANY)
+
+@patch('pipeline.funding_rate_logger.datetime')
+@patch('pipeline.funding_rate_logger.get_next_funding_times')
+@patch('pipeline.funding_rate_logger.cache_top_symbols')
+@patch('pipeline.funding_rate_logger.load_cached_symbols')
+@patch('pipeline.funding_rate_logger.collect_and_save_data')
+@patch('pipeline.funding_rate_logger.fetch_top_symbols')
+def test_log_funding_snapshot_outside_window_last_15min(
+    mock_fetch_top_symbols,
+    mock_collect_and_save,
+    mock_load_cached,
+    mock_cache_top,
+    mock_get_funding_times,
+    mock_datetime,
+    mock_contract_client,
+    mock_funding_time
+):
+    """
+    Test log_funding_snapshot behavior when current time is in the last 15 minutes of an hour.
+    
+    This test verifies that when the current time is in the last 15 minutes of an hour:
+    - The function correctly identifies that we're outside the 15-30 minute window before a whole hour
+    - It does NOT fetch top symbols or cache them
+    - It still checks for post-funding data collection
+    
+    Args:
+        mock_fetch_top_symbols: Mocked fetch_top_symbols function
+        mock_collect_and_save: Mocked collect_and_save_data function
+        mock_load_cached: Mocked load_cached_symbols function
+        mock_cache_top: Mocked cache_top_symbols function
+        mock_get_funding_times: Mocked get_next_funding_times function
+        mock_datetime: Mocked datetime module
+        mock_contract_client: Fixture providing a mocked MEXCContractClient
+        mock_funding_time: Fixture providing a consistent funding time for testing
+    """
+    # Set current time to 50 minutes into the hour (last 15 minutes)
+    mock_now = datetime(2025, 8, 2, 15, 50, 0, tzinfo=timezone.utc)
+    mock_datetime.now.return_value = mock_now
+    
+    # Set up a funding time that would be 15-30 minutes in the past
+    past_funding_time = datetime(2025, 8, 2, 15, 20, 0, tzinfo=timezone.utc)  # 30 minutes ago
+    mock_get_funding_times.return_value = [past_funding_time, mock_funding_time]
+    
+    # Mock load_cached_symbols to return some symbols
+    mock_load_cached.return_value = ["BTC_USDT", "ETH_USDT"]
+    
+    # Configure mock config
+    mock_config = {
+        'top_n': 3,
+        'time_windows': {
+            'daily_days_back': 3,
+            'hourly_hours_back': 8,
+            'five_min_hours_before': 1,
+            'one_min_minutes_before': 10,
+            'one_min_minutes_after': 10
+        }
+    }
+    
+    # Call the function
+    log_funding_snapshot(mock_contract_client, config=mock_config)
+    
+    # Verify fetch_top_symbols was NOT called (we're in last 15 minutes of hour)
+    mock_fetch_top_symbols.assert_not_called()
+    
+    # Verify cache_top_symbols was NOT called
+    mock_cache_top.assert_not_called()
+    
+    # Verify load_cached_symbols was called for the past funding time
+    mock_load_cached.assert_called_with(past_funding_time, cache_dir=ANY)
 
 @patch('pipeline.funding_rate_logger.datetime')
 @patch('pipeline.funding_rate_logger.get_next_funding_times')
@@ -505,7 +643,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     # Verify correct intervals for each timeframe
     assert calls[0][0][1] == 'Day1'  # Daily candles
     assert calls[1][0][1] == 'Hour1'  # Hourly candles
-    assert calls[2][0][1] == 'Min10'  # 10-minute candles
+    assert calls[2][0][1] == 'Min5'   # 5-minute candles
     assert calls[3][0][1] == 'Min1'   # 1-minute candles
     
     # Verify save_data_to_csv was called with the correct data

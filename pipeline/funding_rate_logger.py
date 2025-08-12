@@ -110,19 +110,25 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
         next_funding = min(funding_times, key=lambda ft: abs((ft - now).total_seconds()))
         logger.debug(f"Next reference funding time: {next_funding.isoformat()}")
 
-        # Fetch top symbols with funding only in the 15-30 minutes window before funding
-        symbols_in_window = fetch_top_symbols(
-            client, 
-            top_n=config.get('top_n', 5),
-            min_funding_minutes=15,
-            max_funding_minutes=30
-        )
-        
-        if symbols_in_window:
-            cache_top_symbols(symbols_in_window, next_funding, cache_dir=CACHE_DIR)
-            logger.info(f"Cached {len(symbols_in_window)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbols_in_window)}")
+        # Check if we're in the appropriate time window (not in first 30 minutes or last 15 minutes of an hour)
+        current_minute = now.minute
+        if current_minute < 30 or current_minute > 45:
+            logger.info(f"Current time {now.isoformat()} is not in the 15-30 minute window before a whole hour (minute: {current_minute})")
+            logger.info("Skipping top symbols fetch as we're either in the first 30 minutes or last 15 minutes of an hour")
         else:
-            logger.info("No symbols found with funding within the 15-30 minutes window")
+            # Fetch top symbols with funding only in the 15-30 minutes window before funding
+            symbols_in_window = fetch_top_symbols(
+                client, 
+                top_n=config.get('top_n', 5),
+                min_funding_minutes=15,
+                max_funding_minutes=30
+            )
+            
+            if symbols_in_window:
+                cache_top_symbols(symbols_in_window, next_funding, cache_dir=CACHE_DIR)
+                logger.info(f"Cached {len(symbols_in_window)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbols_in_window)}")
+            else:
+                logger.info("No symbols found with funding within the 15-30 minutes window")
         
         # Check for post-funding data collection (15-30 minutes after funding)
         for funding_time in funding_times:
