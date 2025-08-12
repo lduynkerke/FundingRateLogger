@@ -21,6 +21,6 @@ funding:
   time_windows:
     daily_days_back: 3
     hourly_hours_back: 8
-    ten_min_hours_before: 2
+    five_min_hours_before: 2
     one_min_minutes_before: 15
     one_min_minutes_after: 15

@@ -193,7 +193,7 @@ def test_save_data_to_csv(mock_load_config, mock_path, mock_funding_time):
     This test verifies that:
     - The function creates a CSV file with the correct filename format
     - The CSV header contains all required columns
-    - The function writes data rows for each timeframe (1m, 10m, 1h)
+    - The function writes data rows for each timeframe (1m, 5m, 1h)
     - The data is correctly formatted with symbol, funding time, and candle data
     
     The test uses mocking to avoid actual file system operations, allowing
@@ -220,7 +220,7 @@ def test_save_data_to_csv(mock_load_config, mock_path, mock_funding_time):
             [1627776000000, 40000.0, 40100.0, 39900.0, 40050.0, 100.0],
             [1627776060000, 40100.0, 40200.0, 40000.0, 40150.0, 120.0]
         ],
-        '10m': [
+        '5m': [
             [1627775400000, 39900.0, 40000.0, 39800.0, 39950.0, 90.0]
         ],
         '1h': [
@@ -266,6 +266,7 @@ def test_fetch_top3_symbols(mock_datetime, mock_contract_client):
     - It gets the top funding rates for those symbols
     - It extracts and returns the symbol names in the correct order
     - The client methods are called with the correct parameters
+    - It only includes symbols with funding in the 15-30 minute window
     
     The test uses a mocked client to provide consistent test data without
     making actual API calls.
@@ -283,8 +284,8 @@ def test_fetch_top3_symbols(mock_datetime, mock_contract_client):
     mock_contract_client.get_available_perpetual_symbols.return_value = mock_symbols
     
     # Create funding rates with nextSettleTime included
-    # Set funding times to be 10 minutes in the future (within the 15-minute window)
-    future_time = int((mock_now + timedelta(minutes=10)).timestamp() * 1000)
+    # Set funding times to be 20 minutes in the future (within the 15-30 minute window)
+    future_time = int((mock_now + timedelta(minutes=20)).timestamp() * 1000)
     
     mock_contract_client.get_top_funding_rates.return_value = [
         {'symbol': 'BTC_USDT', 'fundingRate': '0.001', 'nextSettleTime': future_time},
@@ -292,7 +293,7 @@ def test_fetch_top3_symbols(mock_datetime, mock_contract_client):
         {'symbol': 'SOL_USDT', 'fundingRate': '0.0006', 'nextSettleTime': future_time}
     ]
     
-    result = fetch_top_symbols(mock_contract_client, top_n=3)
+    result = fetch_top_symbols(mock_contract_client, top_n=3, min_funding_minutes=15, max_funding_minutes=30)
     
     assert result == ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
     
@@ -307,7 +308,7 @@ def test_fetch_top3_symbols(mock_datetime, mock_contract_client):
 @patch('pipeline.funding_rate_logger.load_cached_symbols')
 @patch('pipeline.funding_rate_logger.collect_and_save_data')
 @patch('pipeline.funding_rate_logger.fetch_top_symbols')
-def test_log_funding_snapshot_15min_window(
+def test_log_funding_snapshot_15_30min_window(
     mock_fetch_top_symbols,
     mock_collect_and_save,
     mock_load_cached,
@@ -318,15 +319,15 @@ def test_log_funding_snapshot_15min_window(
     mock_funding_time
 ):
     """
-    Test log_funding_snapshot behavior when current time is 15 minutes before funding.
+    Test log_funding_snapshot behavior when current time is within 15-30 minutes before funding.
     
-    This test verifies that when the current time is 15 minutes before a funding event:
+    This test verifies that when the current time is within the 15-30 minute window before a funding event:
     - The function correctly identifies the upcoming funding time
     - It fetches the top symbols with highest funding rates
-    - It caches these symbols for later use (at the 10-minute window)
-    - It does NOT collect and save data yet (this happens at the 10-minute window)
+    - It caches these symbols for later use
+    - It does NOT collect and save data yet (this happens after funding)
     
-    The test uses extensive mocking to simulate the 15-minute window scenario
+    The test uses extensive mocking to simulate the 15-30 minute window scenario
     without requiring actual time delays or API calls.
     
     Args:
@@ -339,8 +340,8 @@ def test_log_funding_snapshot_15min_window(
         mock_contract_client: Fixture providing a mocked MEXCContractClient
         mock_funding_time: Fixture providing a consistent funding time for testing
     """
-    # Set current time to 15 minutes before funding
-    mock_now = datetime(2025, 8, 2, 15, 45, 0, tzinfo=timezone.utc)
+    # Set current time to 25 minutes before funding (within 15-30 minute window)
+    mock_now = datetime(2025, 8, 2, 15, 35, 0, tzinfo=timezone.utc)
     mock_datetime.now.return_value = mock_now
     
     mock_get_funding_times.return_value = [mock_funding_time]
@@ -348,13 +349,15 @@ def test_log_funding_snapshot_15min_window(
     # Configure mock to return top symbols
     mock_fetch_top_symbols.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
     
+    # No need to mock get_funding_rate as we're directly using fetch_top_symbols with 15-30 minute window
+    
     # Configure mock config
     mock_config = {
         'top_n': 3,
         'time_windows': {
             'daily_days_back': 3,
             'hourly_hours_back': 8,
-            'ten_min_hours_before': 1,
+            'five_min_hours_before': 1,
             'one_min_minutes_before': 10,
             'one_min_minutes_after': 10
         }
@@ -363,10 +366,15 @@ def test_log_funding_snapshot_15min_window(
     # Call the function
     log_funding_snapshot(mock_contract_client, config=mock_config)
     
+    # Verify fetch_top_symbols was called with min_funding_minutes=15 and max_funding_minutes=30
+    mock_fetch_top_symbols.assert_called_once()
+    assert mock_fetch_top_symbols.call_args[1]['min_funding_minutes'] == 15, "fetch_top_symbols should be called with min_funding_minutes=15"
+    assert mock_fetch_top_symbols.call_args[1]['max_funding_minutes'] == 30, "fetch_top_symbols should be called with max_funding_minutes=30"
+    
     # Verify the correct functions were called
     mock_cache_top.assert_called_once_with(["BTC_USDT", "ETH_USDT", "SOL_USDT"], mock_funding_time, cache_dir=ANY)
     
-    # Verify collect_and_save_data was not called (only happens at 10 min window)
+    # Verify collect_and_save_data was not called (only happens after funding)
     mock_collect_and_save.assert_not_called()
 
 
@@ -375,7 +383,7 @@ def test_log_funding_snapshot_15min_window(
 @patch('pipeline.funding_rate_logger.cache_top_symbols')
 @patch('pipeline.funding_rate_logger.load_cached_symbols')
 @patch('pipeline.funding_rate_logger.collect_and_save_data')
-def test_log_funding_snapshot_15min_after_window(
+def test_log_funding_snapshot_15_30min_after_window(
     mock_collect_and_save,
     mock_load_cached,
     mock_cache_top,
@@ -385,15 +393,15 @@ def test_log_funding_snapshot_15min_after_window(
     mock_funding_time
 ):
     """
-    Test log_funding_snapshot behavior when current time is 10 minutes before funding.
+    Test log_funding_snapshot behavior when current time is 15-30 minutes after funding.
     
-    This test verifies that when the current time is 10 minutes before a funding event:
-    - The function correctly identifies the upcoming funding time
-    - It loads the previously cached symbols (from the 15-minute window)
+    This test verifies that when the current time is within the 15-30 minute window after a funding event:
+    - The function correctly identifies the funding time
+    - It loads the previously cached symbols (from the 15-30 minute window before funding)
     - It calls collect_and_save_data for each of the cached symbols
     - It passes the correct parameters to collect_and_save_data
     
-    This test complements test_log_funding_snapshot_15min_window by verifying the
+    This test complements test_log_funding_snapshot_15_30min_window by verifying the
     second phase of the two-phase data collection strategy.
     
     Args:
@@ -405,8 +413,8 @@ def test_log_funding_snapshot_15min_after_window(
         mock_contract_client: Fixture providing a mocked MEXCContractClient
         mock_funding_time: Fixture providing a consistent funding time for testing
     """
-    # Set current time to 10 minutes before funding
-    mock_now = datetime(2025, 8, 2, 16, 15, 0, tzinfo=timezone.utc)
+    # Set current time to 20 minutes after funding (within 15-30 minute window after funding)
+    mock_now = datetime(2025, 8, 2, 16, 20, 0, tzinfo=timezone.utc)
     mock_datetime.now.return_value = mock_now
     
     mock_get_funding_times.return_value = [mock_funding_time]
@@ -418,7 +426,7 @@ def test_log_funding_snapshot_15min_after_window(
         'time_windows': {
             'daily_days_back': 3,
             'hourly_hours_back': 8,
-            'ten_min_hours_before': 1,
+            'five_min_hours_before': 1,
             'one_min_minutes_before': 10,
             'one_min_minutes_after': 10
         }
@@ -445,7 +453,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     
     This test verifies that:
     - The function loads the configuration with the correct time window parameters
-    - It retrieves OHLCV data for all required timeframes (daily, hourly, 10m, 1m)
+    - It retrieves OHLCV data for all required timeframes (daily, hourly, 5m, 1m)
     - It calls the client's get_futures_ohlcv method with the correct parameters
     - It passes the collected data to save_data_to_csv with the correct format
     
@@ -466,7 +474,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
             'time_windows': {
                 'daily_days_back': 3,
                 'hourly_hours_back': 8,
-                'ten_min_hours_before': 1,
+                'five_min_hours_before': 1,
                 'one_min_minutes_before': 10,
                 'one_min_minutes_after': 10
             }
@@ -477,10 +485,10 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     # Configure mock candle data for different timeframes
     candles_daily = {'success': True, 'data': {'time': [1], 'open': [1.0], 'high': [1.1], 'low': [0.9], 'close': [1.0], 'vol': [100]}}
     candles_1h = {'success': True, 'data': {'time': [2], 'open': [2.0], 'high': [2.1], 'low': [1.9], 'close': [2.0], 'vol': [200]}}
-    candles_10m = {'success': True, 'data': {'time': [3, 4], 'open': [3.0, 4.0], 'high': [3.1, 4.1], 'low': [2.9, 3.9], 'close': [3.0, 4.0], 'vol': [300, 400]}}
+    candles_5m = {'success': True, 'data': {'time': [3, 4], 'open': [3.0, 4.0], 'high': [3.1, 4.1], 'low': [2.9, 3.9], 'close': [3.0, 4.0], 'vol': [300, 400]}}
     candles_1m = {'success': True, 'data': {'time': [5, 6], 'open': [5.0, 6.0], 'high': [5.1, 6.1], 'low': [4.9, 5.9], 'close': [5.0, 6.0], 'vol': [500, 600]}}
     
-    mock_contract_client.get_futures_ohlcv.side_effect = [candles_daily, candles_1h, candles_10m, candles_1m]
+    mock_contract_client.get_futures_ohlcv.side_effect = [candles_daily, candles_1h, candles_5m, candles_1m]
     
     # Call the function
     collect_and_save_data(mock_contract_client, symbol, mock_funding_time, mock_config['funding'])
@@ -507,5 +515,5 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     assert call_args[1] == mock_funding_time
     assert 'daily' in call_args[2]
     assert '1h' in call_args[2]
-    assert '10m' in call_args[2]
+    assert '5m' in call_args[2]
     assert '1m' in call_args[2]

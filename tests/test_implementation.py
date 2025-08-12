@@ -88,7 +88,7 @@ def mock_config():
             'time_windows': {
                 'daily_days_back': 3,
                 'hourly_hours_back': 8,
-                'ten_min_hours_before': 1,
+                'five_min_hours_before': 1,
                 'one_min_minutes_before': 10,
                 'one_min_minutes_after': 10
             }
@@ -101,7 +101,7 @@ def test_collect_and_save_data(mock_client, funding_time, mock_config):
     Test that collect_and_save_data correctly fetches and saves all required candle types.
     
     This test verifies that:
-    - The function retrieves OHLCV data for all required timeframes (daily, hourly, 10m, 1m)
+    - The function retrieves OHLCV data for all required timeframes (daily, hourly, 5m, 1m)
     - It calls the client's get_futures_ohlcv method the correct number of times
     - It passes the collected data to save_data_to_csv with the correct format
     - All timeframe data is included in the saved data
@@ -123,21 +123,22 @@ def test_collect_and_save_data(mock_client, funding_time, mock_config):
         assert call_args[1] == funding_time, "Funding time should be passed correctly to save_data_to_csv"
         assert 'daily' in call_args[2], "Daily candles should be included in saved data"
         assert '1h' in call_args[2], "Hourly candles should be included in saved data"
-        assert '10m' in call_args[2], "10-minute candles should be included in saved data"
+        assert '5m' in call_args[2], "5-minute candles should be included in saved data"
         assert '1m' in call_args[2], "1-minute candles should be included in saved data"
 
 
-def test_log_funding_snapshot_15min_window(mock_client, funding_time, mock_config):
+def test_log_funding_snapshot_15_30min_window(mock_client, funding_time, mock_config):
     """
-    Test that log_funding_snapshot correctly identifies and handles 15-minute window before funding.
+    Test that log_funding_snapshot correctly identifies and handles 15-30 minute window before funding.
     
-    This test verifies that when the current time is 15 minutes before a funding event:
+    This test verifies that when the current time is within the 15-30 minute window before a funding event:
     - The function correctly identifies the upcoming funding time
-    - It caches the top symbols with highest funding rates for later use
+    - It fetches symbols with funding within 30 minutes and filters for the 15-30 minute window
+    - It caches the filtered symbols for later use
     - It passes the correct parameters to the cache_top_symbols function
     
     This test focuses on the first phase of the two-phase data collection strategy,
-    where symbols are identified and cached 15 minutes before funding.
+    where symbols are identified and cached within the 15-30 minute window before funding.
     
     Args:
         mock_client: Fixture providing a mocked MEXCContractClient
@@ -147,22 +148,29 @@ def test_log_funding_snapshot_15min_window(mock_client, funding_time, mock_confi
     with patch('pipeline.funding_rate_logger.datetime') as mock_datetime:
         with patch('pipeline.funding_rate_logger.cache_top_symbols') as mock_cache:
             with patch('pipeline.funding_rate_logger.fetch_top_symbols') as mock_fetch_top:
-                # Set the current time to 15 minutes before funding
-                mock_now = datetime(2025, 8, 2, 15, 45, 0, tzinfo=timezone.utc)
+                # Set the current time to 25 minutes before funding (within 15-30 minute window)
+                mock_now = datetime(2025, 8, 2, 15, 35, 0, tzinfo=timezone.utc)
                 mock_datetime.now.return_value = mock_now
                 
                 # Configure mock to return top symbols
                 mock_fetch_top.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
                 
+                # No need to mock get_funding_rate as we're directly using fetch_top_symbols with 15-30 minute window
+                
                 with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
                     log_funding_snapshot(mock_client, config=mock_config['funding'])
                     
+                    # Verify fetch_top_symbols was called with min_funding_minutes=15 and max_funding_minutes=30
+                    mock_fetch_top.assert_called_once()
+                    assert mock_fetch_top.call_args[1]['min_funding_minutes'] == 15, "fetch_top_symbols should be called with min_funding_minutes=15"
+                    assert mock_fetch_top.call_args[1]['max_funding_minutes'] == 30, "fetch_top_symbols should be called with max_funding_minutes=30"
+                    
                     mock_cache.assert_called_once(), "cache_top_symbols should be called once"
-                    assert mock_cache.call_args[0][0] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Top symbols should be passed correctly to cache_top_symbols"
+                    assert mock_cache.call_args[0][0] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Filtered symbols should be passed correctly to cache_top_symbols"
                     assert mock_cache.call_args[0][1] == funding_time, "Funding time should be passed correctly to cache_top_symbols"
 
 
-def test_log_funding_snapshot_10min_window(mock_client, funding_time, mock_config):
+def test_log_funding_snapshot_5min_window(mock_client, funding_time, mock_config):
     """
     Test that log_funding_snapshot correctly identifies and handles 10-minute window before funding.
     

@@ -25,7 +25,7 @@ from utils.logger import get_logger
 
 CACHE_DIR = Path("cache/funding_rates")
 
-def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, next_funding_minutes: int = 15) -> list[str]:
+def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, min_funding_minutes: int = 15, max_funding_minutes: int = 30) -> list[str]:
     """
     Fetches the top symbols with highest absolute funding rates that have funding within the specified time window.
 
@@ -33,13 +33,15 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, next_funding_m
     :type client: MEXCContractClient
     :param top_n: Number of top symbols to return.
     :type top_n: int
-    :param next_funding_minutes: Only include symbols with funding within this many minutes.
-    :type next_funding_minutes: int
-    :return: List of top symbols with imminent funding.
+    :param min_funding_minutes: Minimum minutes until funding (exclusive lower bound).
+    :type min_funding_minutes: int
+    :param max_funding_minutes: Maximum minutes until funding (inclusive upper bound).
+    :type max_funding_minutes: int
+    :return: List of top symbols with funding in the specified window.
     :rtype: list[str]
     """
     logger = get_logger()
-    logger.info(f"Fetching top {top_n} symbols with highest funding rates and funding within {next_funding_minutes} minutes")
+    logger.info(f"Fetching top {top_n} symbols with highest funding rates and funding between {min_funding_minutes}-{max_funding_minutes} minutes")
     try:
         now = datetime.now(timezone.utc)
         symbols = client.get_available_perpetual_symbols()
@@ -65,10 +67,10 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, next_funding_m
                 
                 logger.debug(f"Symbol {symbol} next funding time: {datetime.fromtimestamp(next_settle_time_sec, timezone.utc).isoformat()}, minutes until funding: {time_until_funding_min:.2f}")
                 
-                # Check if funding is within the specified window
-                if 0 < time_until_funding_min <= next_funding_minutes:
+                # Check if funding is within the 15-30 minute window
+                if min_funding_minutes < time_until_funding_min <= max_funding_minutes:
                     symbols_with_imminent_funding.append(symbol)
-                    logger.info(f"Symbol {symbol} will be funded in {time_until_funding_min:.2f} minutes")
+                    logger.info(f"Symbol {symbol} will be funded in {time_until_funding_min:.2f} minutes (within {min_funding_minutes}-{max_funding_minutes} minute window)")
                     
                     if len(symbols_with_imminent_funding) >= top_n:
                         break
@@ -81,11 +83,11 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, next_funding_m
 
 def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
     """
-    Logs funding rate snapshot and OHLCV data if within 15 or 10 minutes before a funding event.
+    Logs funding rate snapshot and OHLCV data if within the 15-30 minute window before a funding event.
 
     This function implements a two-phase data collection strategy:
-    1. At 15 minutes before funding: Identifies and caches the top symbols with highest funding rates
-    2. At 15 minutes after funding: Retrieves the cached symbols and collects OHLCV data for them
+    1. At 15-30 minutes before funding: Identifies and caches the top symbols with highest funding rates
+    2. At 15-30 minutes after funding: Retrieves the cached symbols and collects OHLCV data for them
     
     The function should be called periodically (e.g., every 5 minutes) and will automatically
     determine when to perform each action based on proximity to funding times.
@@ -108,18 +110,19 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
         next_funding = min(funding_times, key=lambda ft: abs((ft - now).total_seconds()))
         logger.debug(f"Next reference funding time: {next_funding.isoformat()}")
 
-        # Directly fetch top symbols with funding within the next 15 minutes
-        symbols_with_imminent_funding = fetch_top_symbols(
+        # Fetch top symbols with funding only in the 15-30 minutes window before funding
+        symbols_in_window = fetch_top_symbols(
             client, 
             top_n=config.get('top_n', 5),
-            next_funding_minutes=15
+            min_funding_minutes=15,
+            max_funding_minutes=30
         )
         
-        if symbols_with_imminent_funding:
-            cache_top_symbols(symbols_with_imminent_funding, next_funding, cache_dir=CACHE_DIR)
-            logger.info(f"Cached {len(symbols_with_imminent_funding)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbols_with_imminent_funding)}")
+        if symbols_in_window:
+            cache_top_symbols(symbols_in_window, next_funding, cache_dir=CACHE_DIR)
+            logger.info(f"Cached {len(symbols_in_window)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbols_in_window)}")
         else:
-            logger.info("No symbols found with funding within the next 15 minutes")
+            logger.info("No symbols found with funding within the 15-30 minutes window")
         
         # Check for post-funding data collection (15-30 minutes after funding)
         for funding_time in funding_times:
@@ -146,7 +149,7 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
     This function retrieves price data at multiple timeframes around a funding event:
     - Daily candles: For longer-term context (configurable days back from funding time)
     - Hourly candles: For medium-term context (configurable hours back from funding time)
-    - 10m candles: For short-term context before funding (configurable hours before funding)
+    - 5m candles: For short-term context before funding (configurable hours before funding)
     - 1m candles: For detailed price action around funding (configurable minutes before and after)
     
     All timeframes are configurable through the config.yaml file under the funding.time_windows section.
@@ -170,7 +173,7 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
         
         days_back = time_windows.get('daily_days_back', 3)
         hourly_back = time_windows.get('hourly_hours_back', 4)
-        ten_min_hours_before = time_windows.get('ten_min_hours_before', 1)
+        five_min_hours_before = time_windows.get('five_min_hours_before', 1)
         one_min_minutes_before = time_windows.get('one_min_minutes_before', 10)
         one_min_minutes_after = time_windows.get('one_min_minutes_after', 10)
         
@@ -182,8 +185,8 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
         hourly_end = funding_ts
         hourly_start = funding_ts - hourly_back * 3600
         
-        ten_min_end = funding_ts
-        ten_min_start = ten_min_end - ten_min_hours_before * 3600
+        five_min_end = funding_ts
+        five_min_start = five_min_end - five_min_hours_before * 3600
         
         one_min_end = funding_ts + one_min_minutes_after * 60
         one_min_start = funding_ts - one_min_minutes_before * 60
@@ -204,13 +207,13 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
         else:
             logger.debug(f"Fetched {len(candles_1h) if isinstance(candles_1h, list) else 0} hourly candles")
         
-        logger.debug(f"Fetching 10m candles for {symbol}: {ten_min_start} to {ten_min_end}")
-        candles_10m = client.get_futures_ohlcv(symbol, 'Min10', ten_min_start, ten_min_end)
-        if isinstance(candles_10m, dict) and 'time' in candles_10m:
-            candles_10m_len = len(candles_10m.get('time', []))
-            logger.debug(f"Fetched {candles_10m_len} 10m candles")
+        logger.debug(f"Fetching 5m candles for {symbol}: {five_min_start} to {five_min_end}")
+        candles_5m = client.get_futures_ohlcv(symbol, 'Min5', five_min_start, five_min_end)
+        if isinstance(candles_5m, dict) and 'time' in candles_5m:
+            candles_5m_len = len(candles_5m.get('time', []))
+            logger.debug(f"Fetched {candles_5m_len} 5m candles")
         else:
-            logger.debug(f"Fetched {len(candles_10m) if isinstance(candles_10m, list) else 0} 10m candles")
+            logger.debug(f"Fetched {len(candles_5m) if isinstance(candles_5m, list) else 0} 5m candles")
         
         logger.debug(f"Fetching 1m candles for {symbol}: {one_min_start} to {one_min_end}")
         candles_1m = client.get_futures_ohlcv(symbol, 'Min1', one_min_start, one_min_end)
@@ -220,7 +223,7 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
         else:
             logger.debug(f"Fetched {len(candles_1m) if isinstance(candles_1m, list) else 0} 1m candles")
 
-        data = {'daily': candles_daily, '1h': candles_1h, '10m': candles_10m, '1m': candles_1m}
+        data = {'daily': candles_daily, '1h': candles_1h, '5m': candles_5m, '1m': candles_1m}
         save_data_to_csv(symbol, funding_time, data)
         logger.info(f"Successfully collected and saved data for {symbol}")
     except Exception as e:
@@ -293,7 +296,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     :type symbol: str
     :param funding_time: The datetime of the funding rate payout.
     :type funding_time: datetime
-    :param candle_data: Dictionary with '1m', '10m', and '1h' candle data (either lists or dicts).
+    :param candle_data: Dictionary with '1m', '5m', and '1h' candle data (either lists or dicts).
     :type candle_data: dict
     :return: None
     """

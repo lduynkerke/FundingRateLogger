@@ -10,7 +10,7 @@ This application monitors cryptocurrency funding rates on the MEXC exchange, col
 
 - Automatic monitoring of funding rate events on MEXC exchange
 - Identification of top symbols with highest funding rates
-- Collection of OHLCV data at multiple timeframes (1m, 10m, 1h, 1d)
+- Collection of OHLCV data at multiple timeframes (1m, 5m, 1h, 1d)
 - Comprehensive logging system
 - Configurable data collection parameters
 - CSV export of collected data for analysis
@@ -77,7 +77,7 @@ funding:
   time_windows:
     daily_days_back: 3
     hourly_hours_back: 8
-    ten_min_hours_before: 1
+    five_min_hours_before: 1
     one_min_minutes_before: 10
     one_min_minutes_after: 10
 ```
@@ -92,7 +92,7 @@ The `funding` section controls how data is collected:
 - `time_windows`: Configuration for different timeframe data collection
   - `daily_days_back`: Number of days of daily candles to collect
   - `hourly_hours_back`: Number of hours of hourly candles to collect
-  - `ten_min_hours_before`: Hours of 10-minute candles to collect before funding
+  - `five_min_hours_before`: Hours of 10-minute candles to collect before funding
   - `one_min_minutes_before`: Minutes of 1-minute candles to collect before funding
   - `one_min_minutes_after`: Minutes of 1-minute candles to collect after funding
 
@@ -128,8 +128,8 @@ The application will run continuously, checking for upcoming funding events and 
 The application follows this process:
 
 1. Runs every 5 minutes to check for upcoming funding events
-2. At 15 minutes before funding time: Identifies and caches top symbols with highest funding rates
-3. At 10 minutes before funding time: Collects OHLCV data for the cached symbols
+2. At 15-30 minutes before funding time: Identifies and caches top symbols with highest funding rates
+3. At 15-30 minutes after funding time: Collects OHLCV data for the cached symbols
 4. Saves collected data to CSV files for later analysis
 
 ### Output Files
@@ -142,7 +142,7 @@ funding_data_{symbol}_{timestamp}.csv
 Each CSV file contains the following columns:
 - Symbol
 - FundingTime
-- Interval (1m, 10m, 1h, 1d)
+- Interval (1m, 5m, 1h, 1d)
 - Timestamp
 - Open
 - High
