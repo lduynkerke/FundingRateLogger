@@ -343,7 +343,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
                     
                     for i in range(len(time_values)):
                         if i < len(open_values) and i < len(high_values) and i < len(low_values) and i < len(close_values) and i < len(vol_values):
-                            timestamp = int(time_values[i]) // 1000 if isinstance(time_values[i], str) else time_values[i] // 1000
+                            timestamp = int(time_values[i]) // 1000 if len(str(time_values[i])) > 10 else int(time_values[i])
                             writer.writerow([
                                 symbol,
                                 funding_time.isoformat(),
@@ -358,7 +358,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
                 # Handle list format
                 elif isinstance(candles, list):
                     for candle in candles:
-                        timestamp = int(candle[0]) // 1000 if isinstance(candle[0], str) else candle[0] // 1000
+                        timestamp = int(time_values[i]) // 1000 if len(str(time_values[i])) > 10 else int(time_values[i])
                         writer.writerow([
                             symbol,
                             funding_time.isoformat(),
