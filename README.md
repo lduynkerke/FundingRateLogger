@@ -71,8 +71,6 @@ logging:
   max_log_files: 30
 
 funding:
-  snapshot_window_minutes: 10
-  log_interval_hours: 4
   top_n_symbols: 3
   time_windows:
     daily_days_back: 3
@@ -86,8 +84,6 @@ funding:
 
 The `funding` section controls how data is collected:
 
-- `snapshot_window_minutes`: Time window around funding events to collect data
-- `log_interval_hours`: How often to log funding rates
 - `top_n_symbols`: Number of top funding rate symbols to track
 - `time_windows`: Configuration for different timeframe data collection
   - `daily_days_back`: Number of days of daily candles to collect

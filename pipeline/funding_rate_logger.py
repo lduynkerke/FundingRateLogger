@@ -313,7 +313,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     data_dir = Path("data")
     data_dir.mkdir(exist_ok=True)
     
-    file_path = data_dir / f"{symbol}_{timestamp_str}.csv"
+    file_path = data_dir / f"{timestamp_str}_{symbol}.csv"
     
     logger.debug(f"Saving data to {file_path}")
     

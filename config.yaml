@@ -10,17 +10,15 @@ logging:
   log_dir: "logs"
   log_level: "DEBUG"
   console_log_level: "DEBUG"
-  file_log_level: "DEBUG"
+  file_log_level: "INFO"
   log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  max_log_files: 30
+  max_log_files: 100
 
 funding:
-  snapshot_window_minutes: 10
-  log_interval_hours: 4
   top_n_symbols: 5
   time_windows:
     daily_days_back: 3
     hourly_hours_back: 8
-    five_min_hours_before: 2
-    one_min_minutes_before: 15
+    five_min_hours_before: 4
+    one_min_minutes_before: 30
     one_min_minutes_after: 15
