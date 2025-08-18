@@ -14,15 +14,16 @@ from pathlib import Path
 from typing import List
 from datetime import datetime, timezone, timedelta
 
-def cache_top_symbols(symbols: list[str], funding_time: datetime, cache_dir: Path) -> Path:
+def cache_top_symbols(symbols_data: list[dict], funding_time: datetime, cache_dir: Path) -> Path:
     """
-    Caches the top 3 symbols to a text file with a timestamp-based filename.
+    Caches the top symbols with their funding rates to a text file with a timestamp-based filename.
 
     The filename follows the pattern: top3symbols_<ISO_TIMESTAMP>.txt. Characters invalid in filenames
     (e.g., colons) are replaced with hyphens for cross-platform compatibility.
 
-    :param symbols: List of top 3 symbols to cache.
-    :type symbols: list[str]
+    :param symbols_data: List of dictionaries containing symbol and funding rate information.
+                        Each dict should have 'symbol' and 'fundingRate' keys.
+    :type symbols_data: list[dict]
     :param funding_time: The funding time this snapshot corresponds to.
     :type funding_time: datetime
     :param cache_dir: Directory where the cache file will be stored.
@@ -36,15 +37,17 @@ def cache_top_symbols(symbols: list[str], funding_time: datetime, cache_dir: Pat
     file_path = cache_dir / filename
 
     with open(file_path, 'w') as f:
-        for symbol in symbols:
-            f.write(f"{symbol}\n")
+        for data in symbols_data:
+            symbol = data['symbol']
+            funding_rate = data.get('fundingRate', 0)
+            f.write(f"{symbol},{funding_rate}\n")
 
     return file_path
 
 
-def load_cached_symbols(funding_time: datetime, cache_dir: Path) -> list[str]:
+def load_cached_symbols(funding_time: datetime, cache_dir: Path) -> list[dict]:
     """
-    Loads cached top 3 symbols for a specific funding time from a text file.
+    Loads cached top symbols with their funding rates for a specific funding time from a text file.
 
     Expects the file to be named: top3symbols_<ISO_TIMESTAMP>.txt, with the timestamp formatted
     with hyphens instead of colons.
@@ -53,17 +56,28 @@ def load_cached_symbols(funding_time: datetime, cache_dir: Path) -> list[str]:
     :type funding_time: datetime
     :param cache_dir: Directory where the cache file is stored.
     :type cache_dir: Path
-    :return: List of cached symbols, or empty list if file not found.
-    :rtype: list[str]
+    :return: List of dictionaries with 'symbol' and 'fundingRate' keys, or empty list if file not found.
+    :rtype: list[dict]
     """
     safe_timestamp = funding_time.isoformat().replace(":", "-")
     filename = f"top3symbols_{safe_timestamp}.txt"
     file_path = cache_dir / filename
 
+    result = []
     if file_path.exists():
         with open(file_path, 'r') as f:
-            return [line.strip() for line in f.readlines()]
-    return []
+            for line in f.readlines():
+                parts = line.strip().split(',')
+                if len(parts) >= 2:
+                    symbol = parts[0]
+                    try:
+                        funding_rate = float(parts[1])
+                    except ValueError:
+                        funding_rate = 0
+                    result.append({'symbol': symbol, 'fundingRate': funding_rate})
+                elif len(parts) == 1 and parts[0]:  # Handle old format with only symbols
+                    result.append({'symbol': parts[0], 'fundingRate': 0})
+    return result
 
 
 def cleanup_old_caches(cache_dir: Path, max_age_hours: int = 24) -> None:

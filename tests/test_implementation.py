@@ -12,7 +12,7 @@ collects the appropriate data for analysis.
 """
 
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, patch
 
 from api.contract_client import MEXCContractClient
@@ -152,10 +152,14 @@ def test_log_funding_snapshot_15_30min_window(mock_client, funding_time, mock_co
                 mock_now = datetime(2025, 8, 2, 15, 35, 0, tzinfo=timezone.utc)
                 mock_datetime.now.return_value = mock_now
                 
-                # Configure mock to return top symbols
-                mock_fetch_top.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
+                # Configure mock to return top symbols with funding rates
+                mock_fetch_top.return_value = [
+                    {'symbol': 'BTC_USDT', 'fundingRate': 0.001, 'nextSettleTime': int((mock_now + timedelta(minutes=20)).timestamp() * 1000)},
+                    {'symbol': 'ETH_USDT', 'fundingRate': 0.0008, 'nextSettleTime': int((mock_now + timedelta(minutes=20)).timestamp() * 1000)},
+                    {'symbol': 'SOL_USDT', 'fundingRate': 0.0006, 'nextSettleTime': int((mock_now + timedelta(minutes=20)).timestamp() * 1000)}
+                ]
                 
-                # No need to mock get_funding_rate as we're directly using fetch_top_symbols with 15-30 minute window
+                # No need to mock get_top_funding_rates as we're now getting funding rates directly from fetch_top_symbols
                 
                 with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
                     log_funding_snapshot(mock_client, config=mock_config['funding'])
@@ -166,7 +170,11 @@ def test_log_funding_snapshot_15_30min_window(mock_client, funding_time, mock_co
                     assert mock_fetch_top.call_args[1]['max_funding_minutes'] == 30, "fetch_top_symbols should be called with max_funding_minutes=30"
                     
                     mock_cache.assert_called_once(), "cache_top_symbols should be called once"
-                    assert mock_cache.call_args[0][0] == ["BTC_USDT", "ETH_USDT", "SOL_USDT"], "Filtered symbols should be passed correctly to cache_top_symbols"
+                    # Check that symbols_data with funding rates was passed to cache_top_symbols
+                    symbols_data = mock_cache.call_args[0][0]
+                    assert len(symbols_data) > 0, "symbols_data should not be empty"
+                    assert 'symbol' in symbols_data[0], "symbols_data should contain symbol key"
+                    assert 'fundingRate' in symbols_data[0], "symbols_data should contain fundingRate key"
                     assert mock_cache.call_args[0][1] == funding_time, "Funding time should be passed correctly to cache_top_symbols"
 
 
@@ -197,7 +205,12 @@ def test_log_funding_snapshot_5min_window(mock_client, funding_time, mock_config
                 mock_datetime.now.return_value = mock_now
                 
                 with patch('pipeline.funding_rate_logger.get_next_funding_times', return_value=[funding_time]):
-                    mock_load.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
+                    # Mock the return value with the new format that includes funding rates
+                    mock_load.return_value = [
+                        {'symbol': 'BTC_USDT', 'fundingRate': 0.001},
+                        {'symbol': 'ETH_USDT', 'fundingRate': 0.0008},
+                        {'symbol': 'SOL_USDT', 'fundingRate': 0.0006}
+                    ]
                     
                     log_funding_snapshot(mock_client, config=mock_config['funding'])
                     
@@ -206,6 +219,6 @@ def test_log_funding_snapshot_5min_window(mock_client, funding_time, mock_config
                     assert mock_load.call_args[0][0] == funding_time, "Funding time should be passed correctly to load_cached_symbols"
                     
                     assert mock_collect.call_count == 3, "collect_and_save_data should be called for each symbol"
-                    mock_collect.assert_any_call(mock_client, "BTC_USDT", funding_time, mock_config['funding']), "collect_and_save_data should be called for BTC_USDT"
-                    mock_collect.assert_any_call(mock_client, "ETH_USDT", funding_time, mock_config['funding']), "collect_and_save_data should be called for ETH_USDT"
-                    mock_collect.assert_any_call(mock_client, "SOL_USDT", funding_time, mock_config['funding']), "collect_and_save_data should be called for SOL_USDT"
+                    mock_collect.assert_any_call(mock_client, "BTC_USDT", funding_time, mock_config['funding'], funding_rate=0.001), "collect_and_save_data should be called for BTC_USDT with funding rate"
+                    mock_collect.assert_any_call(mock_client, "ETH_USDT", funding_time, mock_config['funding'], funding_rate=0.0008), "collect_and_save_data should be called for ETH_USDT with funding rate"
+                    mock_collect.assert_any_call(mock_client, "SOL_USDT", funding_time, mock_config['funding'], funding_rate=0.0006), "collect_and_save_data should be called for SOL_USDT with funding rate"

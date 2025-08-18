@@ -25,7 +25,7 @@ from utils.logger import get_logger
 
 CACHE_DIR = Path("cache/funding_rates")
 
-def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, min_funding_minutes: int = 15, max_funding_minutes: int = 30) -> list[str]:
+def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, min_funding_minutes: int = 15, max_funding_minutes: int = 30) -> list[dict]:
     """
     Fetches the top symbols with highest absolute funding rates that have funding within the specified time window.
 
@@ -37,8 +37,8 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, min_funding_mi
     :type min_funding_minutes: int
     :param max_funding_minutes: Maximum minutes until funding (inclusive upper bound).
     :type max_funding_minutes: int
-    :return: List of top symbols with funding in the specified window.
-    :rtype: list[str]
+    :return: List of dictionaries containing symbol and funding rate information for symbols with funding in the specified window.
+    :rtype: list[dict]
     """
     logger = get_logger()
     logger.info(f"Fetching top {top_n} symbols with highest funding rates and funding between {min_funding_minutes}-{max_funding_minutes} minutes")
@@ -52,6 +52,7 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, min_funding_mi
         symbols_with_imminent_funding = []
         for entry in top_rates:
             symbol = entry['symbol']
+            funding_rate = entry.get('fundingRate', 0)
             
             next_settle_time = entry.get('nextSettleTime', 0)
             
@@ -69,13 +70,20 @@ def fetch_top_symbols(client: MEXCContractClient, top_n: int = 3, min_funding_mi
                 
                 # Check if funding is within the 15-30 minute window
                 if min_funding_minutes < time_until_funding_min <= max_funding_minutes:
-                    symbols_with_imminent_funding.append(symbol)
+                    # Create a dictionary with symbol and funding rate
+                    symbol_data = {
+                        'symbol': symbol,
+                        'fundingRate': funding_rate,
+                        'nextSettleTime': next_settle_time
+                    }
+                    symbols_with_imminent_funding.append(symbol_data)
                     logger.info(f"Symbol {symbol} will be funded in {time_until_funding_min:.2f} minutes (within {min_funding_minutes}-{max_funding_minutes} minute window)")
                     
                     if len(symbols_with_imminent_funding) >= top_n:
                         break
         
-        logger.info(f"Successfully fetched {len(symbols_with_imminent_funding)} symbols with imminent funding: {', '.join(symbols_with_imminent_funding)}")
+        symbol_names = [data['symbol'] for data in symbols_with_imminent_funding]
+        logger.info(f"Successfully fetched {len(symbols_with_imminent_funding)} symbols with imminent funding: {', '.join(symbol_names)}")
         return symbols_with_imminent_funding
     except Exception as e:
         logger.error(f"Error fetching top symbols: {e}")
@@ -117,16 +125,17 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
             logger.info("Skipping top symbols fetch as we're either in the first 30 minutes or last 15 minutes of an hour")
         else:
             # Fetch top symbols with funding only in the 15-30 minutes window before funding
-            symbols_in_window = fetch_top_symbols(
+            symbols_data = fetch_top_symbols(
                 client, 
                 top_n=config.get('top_n', 5),
                 min_funding_minutes=15,
                 max_funding_minutes=30
             )
             
-            if symbols_in_window:
-                cache_top_symbols(symbols_in_window, next_funding, cache_dir=CACHE_DIR)
-                logger.info(f"Cached {len(symbols_in_window)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbols_in_window)}")
+            if symbols_data:
+                cache_top_symbols(symbols_data, next_funding, cache_dir=CACHE_DIR)
+                symbol_names = [data['symbol'] for data in symbols_data]
+                logger.info(f"Cached {len(symbols_data)} symbols at {now.isoformat()} for {next_funding.isoformat()}: {', '.join(symbol_names)}")
             else:
                 logger.info("No symbols found with funding within the 15-30 minutes window")
         
@@ -136,11 +145,12 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
             
             if 15 <= delta <= 30:
                 logger.info(f"15-minute window after funding at {funding_time.isoformat()}, collecting data")
-                cached_symbols = load_cached_symbols(funding_time, cache_dir=CACHE_DIR)
-                if cached_symbols:
-                    logger.info(f"Loaded cached symbols for {funding_time.isoformat()}: {', '.join(cached_symbols)}")
-                    for symbol in cached_symbols:
-                        collect_and_save_data(client, symbol, funding_time, config)
+                cached_symbols_data = load_cached_symbols(funding_time, cache_dir=CACHE_DIR)
+                if cached_symbols_data:
+                    symbol_names = [data['symbol'] for data in cached_symbols_data]
+                    logger.info(f"Loaded cached symbols for {funding_time.isoformat()}: {', '.join(symbol_names)}")
+                    for symbol_data in cached_symbols_data:
+                        collect_and_save_data(client, symbol_data['symbol'], funding_time, config, funding_rate=symbol_data['fundingRate'])
                     logger.info(f"Data collection completed for {funding_time.isoformat()} at {now.isoformat()}")
                 else:
                     logger.info(f"No cached symbols found for {funding_time.isoformat()}")
@@ -148,7 +158,7 @@ def log_funding_snapshot(client: MEXCContractClient, config: Dict) -> None:
         logger.error(f"Error in log_funding_snapshot: {e}")
         raise
 
-def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time: datetime, config: Dict) -> None:
+def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time: datetime, config: Dict, funding_rate: float = 0) -> None:
     """
     Collects OHLCV candles and saves them to CSV for a given symbol and funding time.
     
@@ -159,7 +169,7 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
     - 1m candles: For detailed price action around funding (configurable minutes before and after)
     
     All timeframes are configurable through the config.yaml file under the funding.time_windows section.
-    The collected data is saved to a CSV file with a timestamp in the filename.
+    The collected data is saved to a CSV file with a timestamp and funding rate in the filename.
     
     :param client: Initialized MEXCContractClient.
     :type client: MEXCContractClient
@@ -169,6 +179,8 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
     :type funding_time: datetime
     :param config: Configuration dictionary containing funding settings, especially time_windows.
     :type config: dict
+    :param funding_rate: The funding rate for the symbol at the funding time.
+    :type funding_rate: float
     :return: None
     """
     logger = get_logger()
@@ -230,8 +242,8 @@ def collect_and_save_data(client: MEXCContractClient, symbol: str, funding_time:
             logger.debug(f"Fetched {len(candles_1m) if isinstance(candles_1m, list) else 0} 1m candles")
 
         data = {'daily': candles_daily, '1h': candles_1h, '5m': candles_5m, '1m': candles_1m}
-        save_data_to_csv(symbol, funding_time, data)
-        logger.info(f"Successfully collected and saved data for {symbol}")
+        save_data_to_csv(symbol, funding_time, data, funding_rate)
+        logger.info(f"Successfully collected and saved data for {symbol} with funding rate {funding_rate}")
     except Exception as e:
         logger.error(f"Error collecting data for {symbol}: {e}")
         raise
@@ -294,7 +306,7 @@ def is_within_window(target_time: datetime, window_minutes: int = 10) -> bool:
     delta = abs((now - target_time).total_seconds()) / 60
     return delta <= window_minutes
 
-def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str, List[list] | dict]) -> None:
+def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str, List[list] | dict], funding_rate: float = 0) -> None:
     """
     Saves the collected candle data to a CSV file in the /data directory.
 
@@ -304,6 +316,8 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     :type funding_time: datetime
     :param candle_data: Dictionary with '1m', '5m', and '1h' candle data (either lists or dicts).
     :type candle_data: dict
+    :param funding_rate: The funding rate for the symbol at the funding time.
+    :type funding_rate: float
     :return: None
     """
     logger = get_logger()
@@ -313,7 +327,10 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     data_dir = Path("data")
     data_dir.mkdir(exist_ok=True)
     
-    file_path = data_dir / f"{timestamp_str}_{symbol}.csv"
+    # Format funding rate for filename (e.g., +0.0123 or -0.0045)
+    funding_rate_str = f"{funding_rate:+.6f}".replace('+', 'p').replace('-', 'n')
+    
+    file_path = data_dir / f"{timestamp_str}_{symbol}_fr{funding_rate_str}.csv"
     
     logger.debug(f"Saving data to {file_path}")
     
@@ -358,7 +375,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
                 # Handle list format
                 elif isinstance(candles, list):
                     for candle in candles:
-                        timestamp = int(time_values[i]) // 1000 if len(str(time_values[i])) > 10 else int(time_values[i])
+                        timestamp = int(candle[0]) // 1000 if len(str(candle[0])) > 10 else int(candle[0])
                         writer.writerow([
                             symbol,
                             funding_time.isoformat(),

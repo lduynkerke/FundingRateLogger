@@ -191,7 +191,7 @@ def test_save_data_to_csv(mock_load_config, mock_path, mock_funding_time):
     Test that save_data_to_csv correctly formats and saves data to a CSV file.
     
     This test verifies that:
-    - The function creates a CSV file with the correct filename format
+    - The function creates a CSV file with the correct filename format including funding rate
     - The CSV header contains all required columns
     - The function writes data rows for each timeframe (1m, 5m, 1h)
     - The data is correctly formatted with symbol, funding time, and candle data
@@ -215,6 +215,7 @@ def test_save_data_to_csv(mock_load_config, mock_path, mock_funding_time):
     }
     
     symbol = "BTC_USDT"
+    funding_rate = 0.0012  # 0.12% positive funding rate
     candle_data = {
         '1m': [
             [1627776000000, 40000.0, 40100.0, 39900.0, 40050.0, 100.0],
@@ -240,14 +241,23 @@ def test_save_data_to_csv(mock_load_config, mock_path, mock_funding_time):
             mock_writer = MagicMock()
             mock_csv_writer.return_value = mock_writer
             
+            # Test with default funding rate (0)
             save_data_to_csv(symbol, mock_funding_time, candle_data)
             
             # Verify the file was opened with the correct path
             # The function first creates the data directory
             mock_path.assert_called_with('data')
                 
-            # Then it creates the file path using the symbol and timestamp
-            mock_path_instance.__truediv__.assert_called_with(f"{symbol}_{mock_funding_time.strftime('%Y-%m-%d_%H:00')}.csv")
+            # Then it creates the file path using the symbol, timestamp, and funding rate (0)
+            funding_rate_str = "p0.000000"  # Default funding rate formatted
+            mock_path_instance.__truediv__.assert_called_with(f"{mock_funding_time.strftime('%Y-%m-%d_%H:00')}_{symbol}_fr{funding_rate_str}.csv")
+            
+            # Test with a specific funding rate
+            save_data_to_csv(symbol, mock_funding_time, candle_data, funding_rate)
+            
+            # Verify the file path includes the funding rate
+            funding_rate_str = "p0.001200"  # 0.0012 formatted with + replaced by p
+            mock_path_instance.__truediv__.assert_called_with(f"{mock_funding_time.strftime('%Y-%m-%d_%H:00')}_{symbol}_fr{funding_rate_str}.csv")
             
             # Verify CSV header was written
             mock_writer.writerow.assert_any_call(['Symbol', 'FundingTime', 'Interval', 'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
@@ -264,7 +274,7 @@ def test_fetch_top3_symbols(mock_datetime, mock_contract_client):
     This test verifies that:
     - The function correctly retrieves available perpetual symbols
     - It gets the top funding rates for those symbols
-    - It extracts and returns the symbol names in the correct order
+    - It returns dictionaries with symbol, funding rate, and nextSettleTime
     - The client methods are called with the correct parameters
     - It only includes symbols with funding in the 15-30 minute window
     
@@ -287,15 +297,25 @@ def test_fetch_top3_symbols(mock_datetime, mock_contract_client):
     # Set funding times to be 20 minutes in the future (within the 15-30 minute window)
     future_time = int((mock_now + timedelta(minutes=20)).timestamp() * 1000)
     
-    mock_contract_client.get_top_funding_rates.return_value = [
+    mock_funding_rates = [
         {'symbol': 'BTC_USDT', 'fundingRate': '0.001', 'nextSettleTime': future_time},
         {'symbol': 'ETH_USDT', 'fundingRate': '0.0008', 'nextSettleTime': future_time},
         {'symbol': 'SOL_USDT', 'fundingRate': '0.0006', 'nextSettleTime': future_time}
     ]
+    mock_contract_client.get_top_funding_rates.return_value = mock_funding_rates
     
     result = fetch_top_symbols(mock_contract_client, top_n=3, min_funding_minutes=15, max_funding_minutes=30)
     
-    assert result == ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
+    # Verify the result contains dictionaries with the expected keys
+    assert len(result) == 3
+    for i, item in enumerate(result):
+        assert isinstance(item, dict)
+        assert 'symbol' in item
+        assert 'fundingRate' in item
+        assert 'nextSettleTime' in item
+        assert item['symbol'] == mock_funding_rates[i]['symbol']
+        assert item['fundingRate'] == mock_funding_rates[i]['fundingRate']
+        assert item['nextSettleTime'] == future_time
     
     mock_contract_client.get_available_perpetual_symbols.assert_called_once()
     # The function calculates fetch_count = min(top_n * 5, len(symbols))
@@ -346,10 +366,12 @@ def test_log_funding_snapshot_15_30min_window(
     
     mock_get_funding_times.return_value = [mock_funding_time]
     
-    # Configure mock to return top symbols
-    mock_fetch_top_symbols.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
-    
-    # No need to mock get_funding_rate as we're directly using fetch_top_symbols with 15-30 minute window
+    # Configure mock to return top symbols with funding rates
+    mock_fetch_top_symbols.return_value = [
+        {'symbol': 'BTC_USDT', 'fundingRate': '0.001', 'nextSettleTime': int((mock_now + timedelta(minutes=20)).timestamp() * 1000)},
+        {'symbol': 'ETH_USDT', 'fundingRate': '0.0008', 'nextSettleTime': int((mock_now + timedelta(minutes=20)).timestamp() * 1000)},
+        {'symbol': 'SOL_USDT', 'fundingRate': '0.0006', 'nextSettleTime': int((mock_now + timedelta(minutes=20)).timestamp() * 1000)}
+    ]
     
     # Configure mock config
     mock_config = {
@@ -372,7 +394,7 @@ def test_log_funding_snapshot_15_30min_window(
     assert mock_fetch_top_symbols.call_args[1]['max_funding_minutes'] == 30, "fetch_top_symbols should be called with max_funding_minutes=30"
     
     # Verify the correct functions were called
-    mock_cache_top.assert_called_once_with(["BTC_USDT", "ETH_USDT", "SOL_USDT"], mock_funding_time, cache_dir=ANY)
+    mock_cache_top.assert_called_once_with(mock_fetch_top_symbols.return_value, mock_funding_time, cache_dir=ANY)
     
     # Verify collect_and_save_data was not called (only happens after funding)
     mock_collect_and_save.assert_not_called()
@@ -420,8 +442,11 @@ def test_log_funding_snapshot_outside_window_first_30min(
     past_funding_time = datetime(2025, 8, 2, 14, 45, 0, tzinfo=timezone.utc)  # 30 minutes ago
     mock_get_funding_times.return_value = [past_funding_time, mock_funding_time]
     
-    # Mock load_cached_symbols to return some symbols
-    mock_load_cached.return_value = ["BTC_USDT", "ETH_USDT"]
+    # Mock load_cached_symbols to return symbols with funding rates
+    mock_load_cached.return_value = [
+        {'symbol': 'BTC_USDT', 'fundingRate': 0.001},
+        {'symbol': 'ETH_USDT', 'fundingRate': 0.0008}
+    ]
     
     # Configure mock config
     mock_config = {
@@ -489,8 +514,11 @@ def test_log_funding_snapshot_outside_window_last_15min(
     past_funding_time = datetime(2025, 8, 2, 15, 20, 0, tzinfo=timezone.utc)  # 30 minutes ago
     mock_get_funding_times.return_value = [past_funding_time, mock_funding_time]
     
-    # Mock load_cached_symbols to return some symbols
-    mock_load_cached.return_value = ["BTC_USDT", "ETH_USDT"]
+    # Mock load_cached_symbols to return symbols with funding rates
+    mock_load_cached.return_value = [
+        {'symbol': 'BTC_USDT', 'fundingRate': 0.001},
+        {'symbol': 'ETH_USDT', 'fundingRate': 0.0008}
+    ]
     
     # Configure mock config
     mock_config = {
@@ -556,7 +584,12 @@ def test_log_funding_snapshot_15_30min_after_window(
     mock_datetime.now.return_value = mock_now
     
     mock_get_funding_times.return_value = [mock_funding_time]
-    mock_load_cached.return_value = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
+    # Mock the return value with the new format that includes funding rates
+    mock_load_cached.return_value = [
+        {'symbol': 'BTC_USDT', 'fundingRate': 0.001},
+        {'symbol': 'ETH_USDT', 'fundingRate': 0.0008},
+        {'symbol': 'SOL_USDT', 'fundingRate': 0.0006}
+    ]
     
     # Configure mock config
     mock_config = {
@@ -576,11 +609,11 @@ def test_log_funding_snapshot_15_30min_after_window(
     # Verify the correct functions were called
     mock_load_cached.assert_called_once_with(mock_funding_time, cache_dir=ANY)
     
-    # Verify collect_and_save_data was called for each symbol
+    # Verify collect_and_save_data was called for each symbol with its funding rate
     assert mock_collect_and_save.call_count == 3
-    mock_collect_and_save.assert_any_call(mock_contract_client, "BTC_USDT", mock_funding_time, mock_config)
-    mock_collect_and_save.assert_any_call(mock_contract_client, "ETH_USDT", mock_funding_time, mock_config)
-    mock_collect_and_save.assert_any_call(mock_contract_client, "SOL_USDT", mock_funding_time, mock_config)
+    mock_collect_and_save.assert_any_call(mock_contract_client, "BTC_USDT", mock_funding_time, mock_config, funding_rate=0.001)
+    mock_collect_and_save.assert_any_call(mock_contract_client, "ETH_USDT", mock_funding_time, mock_config, funding_rate=0.0008)
+    mock_collect_and_save.assert_any_call(mock_contract_client, "SOL_USDT", mock_funding_time, mock_config, funding_rate=0.0006)
 
 
 @patch('pipeline.funding_rate_logger.save_data_to_csv')
@@ -594,6 +627,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     - It retrieves OHLCV data for all required timeframes (daily, hourly, 5m, 1m)
     - It calls the client's get_futures_ohlcv method with the correct parameters
     - It passes the collected data to save_data_to_csv with the correct format
+    - It passes the funding rate to save_data_to_csv when provided
     
     The test uses mocking to simulate API responses and avoid actual API calls,
     ensuring consistent and reproducible test results.
@@ -605,6 +639,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
         mock_funding_time: Fixture providing a consistent funding time for testing
     """
     symbol = "BTC_USDT"
+    funding_rate = 0.0012  # 0.12% positive funding rate
     
     # Configure mock config with time window parameters
     mock_config = {
@@ -628,11 +663,8 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     
     mock_contract_client.get_futures_ohlcv.side_effect = [candles_daily, candles_1h, candles_5m, candles_1m]
     
-    # Call the function
+    # Test 1: Call without funding rate
     collect_and_save_data(mock_contract_client, symbol, mock_funding_time, mock_config['funding'])
-    
-    # Verify the config was loaded
-    # mock_load_config.assert_called_once()
     
     # Verify the client methods were called correctly
     assert mock_contract_client.get_futures_ohlcv.call_count == 4
@@ -646,7 +678,7 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     assert calls[2][0][1] == 'Min5'   # 5-minute candles
     assert calls[3][0][1] == 'Min1'   # 1-minute candles
     
-    # Verify save_data_to_csv was called with the correct data
+    # Verify save_data_to_csv was called with the correct data and default funding rate
     mock_save_data.assert_called_once()
     call_args = mock_save_data.call_args[0]
     assert call_args[0] == symbol
@@ -655,3 +687,19 @@ def test_collect_and_save_data(mock_load_config, mock_save_data, mock_contract_c
     assert '1h' in call_args[2]
     assert '5m' in call_args[2]
     assert '1m' in call_args[2]
+    # Default funding rate should be 0
+    assert call_args[3] == 0
+    
+    # Reset mocks for second test
+    mock_save_data.reset_mock()
+    mock_contract_client.get_futures_ohlcv.side_effect = [candles_daily, candles_1h, candles_5m, candles_1m]
+    
+    # Test 2: Call with funding rate
+    collect_and_save_data(mock_contract_client, symbol, mock_funding_time, mock_config['funding'], funding_rate)
+    
+    # Verify save_data_to_csv was called with the correct funding rate
+    mock_save_data.assert_called_once()
+    call_args = mock_save_data.call_args[0]
+    assert call_args[0] == symbol
+    assert call_args[1] == mock_funding_time
+    assert call_args[3] == funding_rate
