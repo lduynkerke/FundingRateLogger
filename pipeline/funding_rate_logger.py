@@ -330,7 +330,7 @@ def save_data_to_csv(symbol: str, funding_time: datetime, candle_data: Dict[str,
     # Format funding rate for filename (e.g., +0.0123 or -0.0045)
     funding_rate_str = f"{funding_rate:+.6f}".replace('+', 'p').replace('-', 'n')
     
-    file_path = data_dir / f"{timestamp_str}_{symbol}_fr{funding_rate_str}.csv"
+    file_path = data_dir / f"{timestamp_str}_{symbol}_{funding_rate_str}.csv"
     
     logger.debug(f"Saving data to {file_path}")
     
